@@ -24,10 +24,17 @@ public class BookingService {
 
     private final BookingRepository bookingRepository;
     private final VehicleRepository vehicleRepository;
+    private final MaintenanceRepository maintenanceRepository;
 
     public BookingService(BookingRepository bookingRepository, VehicleRepository vehicleRepository) {
+        this(bookingRepository, vehicleRepository, null);
+    }
+
+    public BookingService(BookingRepository bookingRepository, VehicleRepository vehicleRepository,
+                          MaintenanceRepository maintenanceRepository) {
         this.bookingRepository = Objects.requireNonNull(bookingRepository, "BookingRepository must not be null");
         this.vehicleRepository = Objects.requireNonNull(vehicleRepository, "VehicleRepository must not be null");
+        this.maintenanceRepository = maintenanceRepository;
     }
 
     /**

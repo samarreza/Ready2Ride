@@ -168,38 +168,39 @@ public class JdbcVehicleRepository implements VehicleRepository {
         stmt.setString(startIndex + 2, vehicle.getModel());
         stmt.setString(startIndex + 3, vehicle.getRegistrationNumber());
         stmt.setBigDecimal(startIndex + 4, vehicle.getRentalRate());
+        stmt.setBoolean(startIndex + 5, vehicle.isActive());
 
         // Subclass-specific parameter bindings
         if (vehicle instanceof Car car) {
-            stmt.setInt(startIndex + 5, car.getSeatingCapacity());
-            stmt.setString(startIndex + 6, car.getFuelType());
-            stmt.setNull(startIndex + 7, Types.INTEGER);
-            stmt.setNull(startIndex + 8, Types.BOOLEAN);
-            stmt.setNull(startIndex + 9, Types.NUMERIC);
+            stmt.setInt(startIndex + 6, car.getSeatingCapacity());
+            stmt.setString(startIndex + 7, car.getFuelType());
+            stmt.setNull(startIndex + 8, Types.INTEGER);
+            stmt.setNull(startIndex + 9, Types.BOOLEAN);
+            stmt.setNull(startIndex + 10, Types.NUMERIC);
         } else if (vehicle instanceof Bike bike) {
-            stmt.setNull(startIndex + 5, Types.INTEGER);
-            stmt.setNull(startIndex + 6, Types.VARCHAR);
-            stmt.setInt(startIndex + 7, bike.getEngineCapacityCc());
-            stmt.setNull(startIndex + 8, Types.BOOLEAN);
-            stmt.setNull(startIndex + 9, Types.NUMERIC);
+            stmt.setNull(startIndex + 6, Types.INTEGER);
+            stmt.setNull(startIndex + 7, Types.VARCHAR);
+            stmt.setInt(startIndex + 8, bike.getEngineCapacityCc());
+            stmt.setNull(startIndex + 9, Types.BOOLEAN);
+            stmt.setNull(startIndex + 10, Types.NUMERIC);
         } else if (vehicle instanceof SUV suv) {
-            stmt.setInt(startIndex + 5, suv.getSeatingCapacity());
-            stmt.setNull(startIndex + 6, Types.VARCHAR);
-            stmt.setNull(startIndex + 7, Types.INTEGER);
-            stmt.setBoolean(startIndex + 8, suv.isFourWheelDrive());
-            stmt.setNull(startIndex + 9, Types.NUMERIC);
+            stmt.setInt(startIndex + 6, suv.getSeatingCapacity());
+            stmt.setNull(startIndex + 7, Types.VARCHAR);
+            stmt.setNull(startIndex + 8, Types.INTEGER);
+            stmt.setBoolean(startIndex + 9, suv.isFourWheelDrive());
+            stmt.setNull(startIndex + 10, Types.NUMERIC);
         } else if (vehicle instanceof Van van) {
-            stmt.setNull(startIndex + 5, Types.INTEGER);
-            stmt.setNull(startIndex + 6, Types.VARCHAR);
-            stmt.setNull(startIndex + 7, Types.INTEGER);
-            stmt.setNull(startIndex + 8, Types.BOOLEAN);
-            stmt.setBigDecimal(startIndex + 9, BigDecimal.valueOf(van.getCargoCapacityKg()));
+            stmt.setNull(startIndex + 6, Types.INTEGER);
+            stmt.setNull(startIndex + 7, Types.VARCHAR);
+            stmt.setNull(startIndex + 8, Types.INTEGER);
+            stmt.setNull(startIndex + 9, Types.BOOLEAN);
+            stmt.setBigDecimal(startIndex + 10, BigDecimal.valueOf(van.getCargoCapacityKg()));
         } else {
-            stmt.setNull(startIndex + 5, Types.INTEGER);
-            stmt.setNull(startIndex + 6, Types.VARCHAR);
-            stmt.setNull(startIndex + 7, Types.INTEGER);
-            stmt.setNull(startIndex + 8, Types.BOOLEAN);
-            stmt.setNull(startIndex + 9, Types.NUMERIC);
+            stmt.setNull(startIndex + 6, Types.INTEGER);
+            stmt.setNull(startIndex + 7, Types.VARCHAR);
+            stmt.setNull(startIndex + 8, Types.INTEGER);
+            stmt.setNull(startIndex + 9, Types.BOOLEAN);
+            stmt.setNull(startIndex + 10, Types.NUMERIC);
         }
     }
 
@@ -210,10 +211,11 @@ public class JdbcVehicleRepository implements VehicleRepository {
         String model = rs.getString("model");
         String regNumber = rs.getString("registration_number");
         BigDecimal rate = rs.getBigDecimal("rental_rate");
+        boolean active = rs.getBoolean("is_active");
 
         VehicleType type = VehicleType.valueOf(typeStr);
 
-        return switch (type) {
+        Vehicle vehicle = switch (type) {
             case CAR -> {
                 int seats = rs.getInt("seating_capacity");
                 String fuel = rs.getString("fuel_type");
@@ -234,5 +236,8 @@ public class JdbcVehicleRepository implements VehicleRepository {
                 yield new Van(id, brand, model, regNumber, rate, cargoVal);
             }
         };
+
+        vehicle.setActive(active);
+        return vehicle;
     }
 }

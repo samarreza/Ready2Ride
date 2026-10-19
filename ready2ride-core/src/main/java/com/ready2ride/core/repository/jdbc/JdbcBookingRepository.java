@@ -58,18 +58,42 @@ public class JdbcBookingRepository implements BookingRepository {
                     }
                 }
 
-                // 2. Lock the vehicle row to serialize concurrent booking attempts for this vehicle
-                String lockVehicleSql = "SELECT id FROM vehicles WHERE id = ? FOR UPDATE";
+                // 2. Lock the vehicle row to serialize concurrent booking attempts and verify active status
+                String lockVehicleSql = "SELECT id, is_active FROM vehicles WHERE id = ? FOR UPDATE";
                 try (PreparedStatement lockStmt = conn.prepareStatement(lockVehicleSql)) {
                     lockStmt.setString(1, booking.getVehicleId());
                     try (ResultSet rs = lockStmt.executeQuery()) {
                         if (!rs.next()) {
                             throw new VehicleNotFoundException("Vehicle with ID '" + booking.getVehicleId() + "' was not found.");
                         }
+                        if (!rs.getBoolean("is_active")) {
+                            throw new VehicleNotAvailableException("Vehicle '" + booking.getVehicleId() + "' is inactive and cannot be booked.");
+                        }
                     }
                 }
 
-                // 3. If this booking is active, verify that no overlapping active reservations exist
+                // 3. Verify vehicle is not under incomplete maintenance during requested rental period
+                String checkMaintenanceSql = """
+                        SELECT id, service_date, description FROM maintenance
+                        WHERE vehicle_id = ?
+                          AND is_completed = FALSE
+                          AND service_date >= ?
+                          AND service_date <= ?
+                        """;
+                try (PreparedStatement mntStmt = conn.prepareStatement(checkMaintenanceSql)) {
+                    mntStmt.setString(1, booking.getVehicleId());
+                    mntStmt.setDate(2, java.sql.Date.valueOf(booking.getPickupDateTime().toLocalDate()));
+                    mntStmt.setDate(3, java.sql.Date.valueOf(booking.getReturnDateTime().toLocalDate()));
+                    try (ResultSet rs = mntStmt.executeQuery()) {
+                        if (rs.next()) {
+                            throw new VehicleNotAvailableException(String.format(
+                                    "Vehicle '%s' is scheduled for maintenance on %s (%s) and cannot be booked.",
+                                    booking.getVehicleId(), rs.getDate("service_date"), rs.getString("description")));
+                        }
+                    }
+                }
+
+                // 4. If this booking is active, verify that no overlapping active reservations exist
                 if (booking.getStatus().blocksAvailability()) {
                     checkOverlappingReservations(conn, booking, exists);
                 }
