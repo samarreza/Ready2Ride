@@ -106,7 +106,37 @@ The seed script is idempotent (`ON CONFLICT DO NOTHING`) and safe to re-run.
 
 ---
 
-## 5. Running Automated Tests
+## 5. Provisioning the Initial Administrator (Bootstrap Setup)
+
+Ready2Ride avoids hard-coded administrator credentials in source code. To safely initialize the first system administrator:
+
+```powershell
+.\mvnw.cmd exec:java -pl ready2ride-core -Dexec.mainClass="com.ready2ride.core.database.AdminBootstrapCli"
+```
+
+The bootstrap CLI:
+1. Verifies connectivity to the `ready2ride` PostgreSQL database.
+2. Checks whether an administrator account already exists.
+3. Prompts securely for Administrator Full Name, Email, Phone Number, and Password.
+4. Hashes the password using enterprise PBKDF2 with HMAC-SHA256 (65,536 iterations, 128-bit salt).
+5. Persists the administrator account with the `ADMIN` role.
+6. **Safety Guarantee:** If an administrator account already exists, the bootstrap process aborts immediately and refuses to overwrite.
+
+---
+
+## 6. Running the JavaFX Desktop Application
+
+To launch the administrator desktop application:
+
+```powershell
+.\mvnw.cmd javafx:run -pl ready2ride-desktop
+```
+
+Ensure environment variables (`READY2RIDE_DB_URL`, `READY2RIDE_DB_USER`, `READY2RIDE_DB_PASSWORD`) are configured in the terminal session before running so that login authentication can connect to PostgreSQL. If PostgreSQL is not reachable, the login screen displays a clear, safe diagnostic error message.
+
+---
+
+## 7. Running Automated Tests
 
 ### Category A: Unit Tests (No Database Required)
 
@@ -134,7 +164,7 @@ Or run the PostgreSQL integration suite directly:
 
 ---
 
-## 6. Common Connection Troubleshooting
+## 8. Common Connection Troubleshooting
 
 1. **Error: `Connection refused: connect`**
    - **Cause:** PostgreSQL service is stopped or running on a different port.

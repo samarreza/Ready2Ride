@@ -8,12 +8,14 @@ import com.ready2ride.core.model.Booking;
 import com.ready2ride.core.model.BookingStatus;
 import com.ready2ride.core.model.Vehicle;
 import com.ready2ride.core.repository.BookingRepository;
+import com.ready2ride.core.repository.MaintenanceRepository;
 import com.ready2ride.core.repository.VehicleRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
