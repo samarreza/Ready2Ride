@@ -159,7 +159,7 @@ public class LoginView {
         previewDashboardButton.setPrefHeight(42);
 
         // Demonstration Note
-        Label demoNoticeLabel = new Label("Demonstration mode: PostgreSQL authentication will be connected in Phase 3/4. Select Preview Dashboard to inspect the fleet management interface.");
+        Label demoNoticeLabel = new Label("Secure authentication: Enter administrator credentials to sign in, or select Preview Dashboard for demonstration mode.");
         demoNoticeLabel.setFont(UiTheme.FONT_SMALL_ITALIC);
         demoNoticeLabel.setTextFill(UiTheme.COLOR_TEXT_HINT);
         demoNoticeLabel.setWrapText(true);

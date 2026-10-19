@@ -11,9 +11,17 @@ import com.ready2ride.core.model.Bike;
 import com.ready2ride.core.model.Booking;
 import com.ready2ride.core.model.BookingStatus;
 import com.ready2ride.core.model.Car;
+import com.ready2ride.core.model.MaintenanceRecord;
+import com.ready2ride.core.model.Payment;
+import com.ready2ride.core.model.PaymentMethod;
+import com.ready2ride.core.model.PaymentStatus;
 import com.ready2ride.core.model.SUV;
+import com.ready2ride.core.model.User;
+import com.ready2ride.core.model.UserRole;
 import com.ready2ride.core.model.Van;
 import com.ready2ride.core.model.Vehicle;
+import com.ready2ride.core.service.AuthenticationService;
+import com.ready2ride.core.util.PasswordHasher;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -28,6 +36,7 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -47,8 +56,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PostgresIntegrationTest {
 
     private static DatabaseConnectionManager connectionManager;
+    private static JdbcUserRepository userRepository;
     private static JdbcVehicleRepository vehicleRepository;
     private static JdbcBookingRepository bookingRepository;
+    private static JdbcPaymentRepository paymentRepository;
+    private static JdbcMaintenanceRepository maintenanceRepository;
+    private static AuthenticationService authService;
     private static boolean databaseAvailable = false;
 
     private static final String TEST_CUSTOMER_ID = "CUST-IT-USER-1";
@@ -70,11 +83,15 @@ class PostgresIntegrationTest {
                 initializer.executeScriptFile(schemaPath);
             }
 
-            // Ensure test customer exists in users table
-            ensureTestUserExists(TEST_CUSTOMER_ID, "Integration Test Customer", "it.customer@example.com");
-
+            userRepository = new JdbcUserRepository(connectionManager);
             vehicleRepository = new JdbcVehicleRepository(connectionManager);
             bookingRepository = new JdbcBookingRepository(connectionManager);
+            paymentRepository = new JdbcPaymentRepository(connectionManager);
+            maintenanceRepository = new JdbcMaintenanceRepository(connectionManager);
+            authService = new AuthenticationService(userRepository);
+
+            // Ensure test customer exists in users table
+            ensureTestUserExists(TEST_CUSTOMER_ID, "Integration Test Customer", "it.customer@example.com");
         }
     }
 
@@ -384,5 +401,163 @@ class PostgresIntegrationTest {
         // Exactly one competing thread should succeed and the other must be rejected
         assertEquals(1, successCount.get(), "Exactly one concurrent booking request must succeed");
         assertEquals(1, failureCount.get(), "The competing concurrent booking request must be rejected with VehicleNotAvailableException");
+    }
+
+    @Test
+    @Order(14)
+    @DisplayName("14. User creation, persistent storage and normalized lookup in PostgreSQL")
+    void testUserPersistenceAndLookup() {
+        checkDatabase();
+
+        String rawPassword = "PostgresPassword2026!";
+        String hash = PasswordHasher.hashPassword(rawPassword);
+        User user = new User(
+                "IT-USER-PERSIST", "Postgres User", "pg.user@example.com",
+                "+1-555-0909", hash, UserRole.CUSTOMER, "DL-PG-999", true, LocalDateTime.now()
+        );
+
+        userRepository.save(user);
+
+        // Lookup by ID
+        Optional<User> byId = userRepository.findById("IT-USER-PERSIST");
+        assertTrue(byId.isPresent());
+        assertEquals("Postgres User", byId.get().getFullName());
+        assertEquals(UserRole.CUSTOMER, byId.get().getRole());
+
+        // Lookup by uppercase normalized email
+        Optional<User> byEmail = userRepository.findByEmail("PG.USER@EXAMPLE.COM");
+        assertTrue(byEmail.isPresent());
+        assertEquals("IT-USER-PERSIST", byEmail.get().getId());
+
+        // Password hash verification against stored DB hash
+        assertTrue(PasswordHasher.checkPassword(rawPassword, byEmail.get().getPasswordHash()));
+        assertFalse(PasswordHasher.checkPassword("WrongPass!", byEmail.get().getPasswordHash()));
+    }
+
+    @Test
+    @Order(15)
+    @DisplayName("15. Enforcing duplicate email rejection in PostgreSQL users table")
+    void testDuplicateEmailRejection() {
+        checkDatabase();
+
+        User duplicateEmailUser = new User(
+                "IT-USER-DUP", "Another User", "pg.user@example.com",
+                "+1-555-0910", "$hash", UserRole.CUSTOMER, null, true, LocalDateTime.now()
+        );
+
+        assertThrows(DataAccessException.class, () -> userRepository.save(duplicateEmailUser));
+    }
+
+    @Test
+    @Order(16)
+    @DisplayName("16. Enforcing role validation for CUSTOMER and ADMIN")
+    void testRoleValidation() {
+        checkDatabase();
+
+        User admin = new User(
+                "IT-ADMIN-1", "Database Admin", "it.admin@ready2ride.internal",
+                "+1-555-0911", PasswordHasher.hashPassword("AdminPass2026!"),
+                UserRole.ADMIN, null, true, LocalDateTime.now()
+        );
+
+        userRepository.save(admin);
+
+        Optional<User> retrievedAdmin = userRepository.findById("IT-ADMIN-1");
+        assertTrue(retrievedAdmin.isPresent());
+        assertEquals(UserRole.ADMIN, retrievedAdmin.get().getRole());
+        assertTrue(retrievedAdmin.get().isAdmin());
+
+        List<User> admins = userRepository.findByRole(UserRole.ADMIN);
+        assertTrue(admins.stream().anyMatch(u -> "IT-ADMIN-1".equals(u.getId())));
+    }
+
+    @Test
+    @Order(17)
+    @DisplayName("17. Rejecting bookings for inactive (deactivated) vehicles")
+    void testInactiveVehicleBookingRejection() {
+        checkDatabase();
+
+        Vehicle inactiveVehicle = new Car(
+                "IT-CAR-INACTIVE", "Ford", "Focus", "IT-REG-INACT-1",
+                new BigDecimal("40.00"), 5, "Petrol"
+        );
+        inactiveVehicle.setActive(false);
+        vehicleRepository.save(inactiveVehicle);
+
+        Booking booking = new Booking(
+                "IT-BKG-INACT-V", TEST_CUSTOMER_ID, "IT-CAR-INACTIVE",
+                BASE_TIME.plusDays(30), BASE_TIME.plusDays(32), new BigDecimal("80.00"), BookingStatus.CONFIRMED
+        );
+
+        assertThrows(VehicleNotAvailableException.class, () -> bookingRepository.save(booking));
+    }
+
+    @Test
+    @Order(18)
+    @DisplayName("18. Payment persistence and lookup in PostgreSQL")
+    void testPaymentPersistence() {
+        checkDatabase();
+
+        Payment payment = new Payment(
+                "IT-PAY-1", "IT-BKG-1", new BigDecimal("99.00"),
+                LocalDateTime.now(), PaymentMethod.UPI, PaymentStatus.COMPLETED, "UPI-IT-TXN-12345"
+        );
+
+        paymentRepository.save(payment);
+
+        Optional<Payment> retrieved = paymentRepository.findById("IT-PAY-1");
+        assertTrue(retrieved.isPresent());
+        assertEquals("IT-BKG-1", retrieved.get().getBookingId());
+        assertEquals(new BigDecimal("99.00"), retrieved.get().getAmount());
+        assertEquals("UPI-IT-TXN-12345", retrieved.get().getTransactionReference());
+        assertEquals(PaymentMethod.UPI, retrieved.get().getPaymentMethod());
+        assertEquals(PaymentStatus.COMPLETED, retrieved.get().getStatus());
+
+        List<Payment> byBooking = paymentRepository.findByBookingId("IT-BKG-1");
+        assertFalse(byBooking.isEmpty());
+        assertTrue(byBooking.stream().anyMatch(p -> "IT-PAY-1".equals(p.getPaymentId())));
+    }
+
+    @Test
+    @Order(19)
+    @DisplayName("19. Maintenance persistence and vehicle schedule blocking in PostgreSQL")
+    void testMaintenancePersistenceAndAvailabilityConflict() {
+        checkDatabase();
+
+        LocalDate mntDate = BASE_TIME.plusDays(40).toLocalDate();
+        MaintenanceRecord record = new MaintenanceRecord(
+                "IT-MNT-1", "IT-CAR-1", mntDate,
+                "Brake overhaul and full inspection", new BigDecimal("180.00"), false
+        );
+
+        maintenanceRepository.save(record);
+
+        Optional<MaintenanceRecord> retrieved = maintenanceRepository.findById("IT-MNT-1");
+        assertTrue(retrieved.isPresent());
+        assertEquals("IT-CAR-1", retrieved.get().getVehicleId());
+        assertFalse(retrieved.get().isCompleted());
+
+        // Booking overlapping with the scheduled maintenance date must be rejected
+        LocalDateTime mntBookingStart = BASE_TIME.plusDays(39);
+        LocalDateTime mntBookingEnd = BASE_TIME.plusDays(42);
+
+        Booking conflictBooking = new Booking(
+                "IT-BKG-MNT-CONFLICT", TEST_CUSTOMER_ID, "IT-CAR-1",
+                mntBookingStart, mntBookingEnd, new BigDecimal("120.00"), BookingStatus.CONFIRMED
+        );
+
+        assertThrows(VehicleNotAvailableException.class, () -> bookingRepository.save(conflictBooking));
+
+        // Mark maintenance as completed - should no longer block booking
+        record.setCompleted(true);
+        maintenanceRepository.save(record);
+
+        Booking allowedAfterMnt = new Booking(
+                "IT-BKG-MNT-RESOLVED", TEST_CUSTOMER_ID, "IT-CAR-1",
+                mntBookingStart, mntBookingEnd, new BigDecimal("120.00"), BookingStatus.CONFIRMED
+        );
+        Booking saved = bookingRepository.save(allowedAfterMnt);
+        assertNotNull(saved);
+        assertEquals("IT-BKG-MNT-RESOLVED", saved.getBookingId());
     }
 }
