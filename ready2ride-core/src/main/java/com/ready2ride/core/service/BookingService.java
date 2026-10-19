@@ -82,6 +82,17 @@ public class BookingService {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new VehicleNotFoundException("Vehicle with ID '" + vehicleId + "' was not found."));
 
+        if (!vehicle.isActive()) {
+            throw new VehicleNotAvailableException("Vehicle with ID '" + vehicleId + "' is inactive and cannot be booked.");
+        }
+
+        if (maintenanceRepository != null &&
+                maintenanceRepository.hasActiveMaintenance(vehicleId, pickupDateTime.toLocalDate(), returnDateTime.toLocalDate())) {
+            throw new VehicleNotAvailableException(String.format(
+                    "Vehicle '%s' is scheduled for maintenance between %s and %s and cannot be booked.",
+                    vehicleId, pickupDateTime.toLocalDate(), returnDateTime.toLocalDate()));
+        }
+
         // 3. Verify vehicle availability against active overlapping reservations
         checkAvailability(vehicleId, pickupDateTime, returnDateTime);
 
@@ -108,13 +119,18 @@ public class BookingService {
      * @param vehicleId      vehicle identifier
      * @param pickupDateTime requested pickup date/time
      * @param returnDateTime requested return date/time
-     * @return true if vehicle exists and has no overlapping active bookings; false otherwise
+     * @return true if vehicle exists, is active, has no incomplete maintenance and has no overlapping active bookings; false otherwise
      */
     public boolean isVehicleAvailable(String vehicleId, LocalDateTime pickupDateTime, LocalDateTime returnDateTime) {
-        if (!vehicleRepository.existsById(vehicleId)) {
+        Optional<Vehicle> vehicleOpt = vehicleRepository.findById(vehicleId);
+        if (vehicleOpt.isEmpty() || !vehicleOpt.get().isActive()) {
             return false;
         }
         if (pickupDateTime == null || returnDateTime == null || !returnDateTime.isAfter(pickupDateTime)) {
+            return false;
+        }
+        if (maintenanceRepository != null &&
+                maintenanceRepository.hasActiveMaintenance(vehicleId, pickupDateTime.toLocalDate(), returnDateTime.toLocalDate())) {
             return false;
         }
 

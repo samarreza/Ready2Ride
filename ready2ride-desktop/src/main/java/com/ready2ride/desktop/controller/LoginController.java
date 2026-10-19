@@ -1,33 +1,47 @@
 package com.ready2ride.desktop.controller;
 
+import com.ready2ride.core.exception.AuthenticationException;
+import com.ready2ride.core.exception.DatabaseConnectionException;
+import com.ready2ride.core.model.User;
+import com.ready2ride.core.model.UserRole;
+import com.ready2ride.core.service.AuthenticationService;
 import com.ready2ride.desktop.view.LoginView;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
 
 import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
  * Controller managing user interactions on the Ready2Ride Login screen.
- * Handles input validation, password visibility toggling, and navigation callbacks.
+ * Connects directly to {@link AuthenticationService} for persistent database authentication,
+ * enforces role authorizations, and handles database connectivity errors gracefully.
  */
 public class LoginController {
 
     private final LoginView view;
+    private final AuthenticationService authService;
     private final Consumer<String> onNavigateToDashboard;
     private boolean isPasswordVisible = false;
 
     /**
-     * Constructs the LoginController.
+     * Constructs the LoginController with persistent authentication service.
      *
      * @param view                   LoginView presentation instance
+     * @param authService            backend authentication service
      * @param onNavigateToDashboard callback consumer triggered when navigating to dashboard
      */
-    public LoginController(LoginView view, Consumer<String> onNavigateToDashboard) {
+    public LoginController(LoginView view, AuthenticationService authService, Consumer<String> onNavigateToDashboard) {
         this.view = Objects.requireNonNull(view, "LoginView must not be null");
+        this.authService = authService;
         this.onNavigateToDashboard = Objects.requireNonNull(onNavigateToDashboard, "Navigation callback must not be null");
 
         initEventHandlers();
+    }
+
+    /**
+     * Backwards-compatible constructor for testing.
+     */
+    public LoginController(LoginView view, Consumer<String> onNavigateToDashboard) {
+        this(view, null, onNavigateToDashboard);
     }
 
     private void initEventHandlers() {
@@ -72,26 +86,37 @@ public class LoginController {
             return;
         }
 
-        // 2. Honest prototype behavior - notify that backend auth will be connected in Phase 3/4
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Ready2Ride — Prototype Authentication Notice");
-        alert.setHeaderText("Backend Authentication Scheduled for Phase 3/4");
-        alert.setContentText(String.format(
-                "Welcome, %s!\n\n" +
-                "PostgreSQL password hashing and table-based authentication will be connected in Phase 3/4.\n" +
-                "Proceeding now to the Administrator Dashboard preview.", username));
+        if (authService == null) {
+            view.showError("Authentication service is uninitialized. Please check database configuration.");
+            return;
+        }
 
-        alert.showAndWait().ifPresent(response -> {
-            if (response == ButtonType.OK) {
-                onNavigateToDashboard.accept(username);
+        try {
+            // 2. Perform database-backed authentication
+            User user = authService.authenticate(username, password);
+
+            // 3. Verify the account's role (enforce ADMIN access for desktop)
+            if (user.getRole() != UserRole.ADMIN) {
+                view.showError("Access denied: Only administrator accounts can access the Fleet Management Dashboard.");
+                return;
             }
-        });
+
+            // 4. Enter administrator dashboard upon successful verification
+            onNavigateToDashboard.accept(user.getFullName());
+
+        } catch (AuthenticationException e) {
+            view.showError(e.getMessage());
+        } catch (DatabaseConnectionException e) {
+            view.showError("Unable to connect to PostgreSQL database. Please ensure PostgreSQL is running and credentials are configured.");
+        } catch (Exception e) {
+            view.showError("Sign in error: " + e.getMessage());
+        }
     }
 
     private void handlePreviewDashboard() {
         view.clearError();
-        // Direct demonstration navigation with default preview user
-        onNavigateToDashboard.accept("Admin Preview");
+        // Direct demonstration navigation with default preview user (does not count as authenticated login)
+        onNavigateToDashboard.accept("Admin Preview (Demo)");
     }
 
     private void togglePasswordVisibility() {
