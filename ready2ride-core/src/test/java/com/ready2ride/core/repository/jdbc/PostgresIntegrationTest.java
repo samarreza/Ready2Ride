@@ -36,6 +36,7 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -83,6 +84,9 @@ class PostgresIntegrationTest {
                 initializer.executeScriptFile(schemaPath);
             }
 
+            // Clean up test data from any previous runs to ensure repeatable execution
+            cleanupPreviousTestData();
+
             userRepository = new JdbcUserRepository(connectionManager);
             vehicleRepository = new JdbcVehicleRepository(connectionManager);
             bookingRepository = new JdbcBookingRepository(connectionManager);
@@ -116,6 +120,31 @@ class PostgresIntegrationTest {
         Assumptions.assumeTrue(databaseAvailable,
                 "PostgreSQL integration test skipped: Database is not accessible. " +
                 "Configure READY2RIDE_DB_URL, READY2RIDE_DB_USER, and READY2RIDE_DB_PASSWORD to run.");
+    }
+
+    /**
+     * Removes all test-specific rows (prefixed with "IT-" or "CUST-IT-") from the database.
+     * Deletion order respects foreign key constraints: payments → bookings → maintenance → vehicles → users.
+     * This ensures repeatable test runs against a persistent development database
+     * without destroying seed or production data.
+     */
+    private static void cleanupPreviousTestData() {
+        String[] cleanupStatements = {
+            "DELETE FROM payments WHERE id LIKE 'IT-%'",
+            "DELETE FROM bookings WHERE id LIKE 'IT-%'",
+            "DELETE FROM maintenance WHERE id LIKE 'IT-%'",
+            "DELETE FROM vehicles WHERE id LIKE 'IT-%'",
+            "DELETE FROM users WHERE id LIKE 'IT-%' OR id LIKE 'CUST-IT-%'"
+        };
+
+        try (Connection conn = connectionManager.getConnection();
+             Statement stmt = conn.createStatement()) {
+            for (String sql : cleanupStatements) {
+                stmt.executeUpdate(sql);
+            }
+        } catch (SQLException e) {
+            System.err.println("[PostgresIntegrationTest] Warning: test data cleanup failed: " + e.getMessage());
+        }
     }
 
     @Test

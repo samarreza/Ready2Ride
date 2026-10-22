@@ -15,15 +15,31 @@ import java.time.LocalDateTime;
 public class Van extends Vehicle {
 
     private double cargoCapacityKg;
+    private int seatingCapacity = 12;
+    private int luggageCapacityBags = 5;
+    private String fuelType = "Diesel";
+
+    public Van(String id, String brand, String model, String registrationNumber,
+               BigDecimal dailyRentalRate, double cargoCapacityKg, int seatingCapacity, int luggageCapacityBags, String fuelType) {
+        super(id, brand, model, registrationNumber, dailyRentalRate);
+        this.cargoCapacityKg = cargoCapacityKg;
+        this.seatingCapacity = seatingCapacity;
+        this.luggageCapacityBags = luggageCapacityBags;
+        this.fuelType = fuelType;
+    }
+
+    public Van(String id, String brand, String model, String registrationNumber,
+               BigDecimal dailyRentalRate, double cargoCapacityKg, int seatingCapacity, int luggageCapacityBags) {
+        this(id, brand, model, registrationNumber, dailyRentalRate, cargoCapacityKg, seatingCapacity, luggageCapacityBags, "Diesel");
+    }
 
     public Van(String id, String brand, String model, String registrationNumber,
                BigDecimal dailyRentalRate, double cargoCapacityKg) {
-        super(id, brand, model, registrationNumber, dailyRentalRate);
-        this.cargoCapacityKg = cargoCapacityKg;
+        this(id, brand, model, registrationNumber, dailyRentalRate, cargoCapacityKg, 12, 5, "Diesel");
     }
 
     public Van(String id, String brand, String model, String registrationNumber, BigDecimal dailyRentalRate) {
-        this(id, brand, model, registrationNumber, dailyRentalRate, 1200.0);
+        this(id, brand, model, registrationNumber, dailyRentalRate, 1200.0, 12, 5, "Diesel");
     }
 
     @Override
@@ -55,5 +71,29 @@ public class Van extends Vehicle {
 
     public void setCargoCapacityKg(double cargoCapacityKg) {
         this.cargoCapacityKg = cargoCapacityKg;
+    }
+
+    public int getSeatingCapacity() {
+        return seatingCapacity;
+    }
+
+    public void setSeatingCapacity(int seatingCapacity) {
+        this.seatingCapacity = seatingCapacity;
+    }
+
+    public int getLuggageCapacityBags() {
+        return luggageCapacityBags;
+    }
+
+    public void setLuggageCapacityBags(int luggageCapacityBags) {
+        this.luggageCapacityBags = luggageCapacityBags;
+    }
+
+    public String getFuelType() {
+        return fuelType;
+    }
+
+    public void setFuelType(String fuelType) {
+        this.fuelType = fuelType;
     }
 }

@@ -16,16 +16,30 @@ public class SUV extends Vehicle {
 
     private boolean fourWheelDrive;
     private int seatingCapacity;
+    private int luggageCapacityBags = 3;
+    private String fuelType = "Diesel";
 
     public SUV(String id, String brand, String model, String registrationNumber,
-               BigDecimal dailyRentalRate, boolean fourWheelDrive, int seatingCapacity) {
+               BigDecimal dailyRentalRate, boolean fourWheelDrive, int seatingCapacity, int luggageCapacityBags, String fuelType) {
         super(id, brand, model, registrationNumber, dailyRentalRate);
         this.fourWheelDrive = fourWheelDrive;
         this.seatingCapacity = seatingCapacity;
+        this.luggageCapacityBags = luggageCapacityBags;
+        this.fuelType = fuelType;
+    }
+
+    public SUV(String id, String brand, String model, String registrationNumber,
+               BigDecimal dailyRentalRate, boolean fourWheelDrive, int seatingCapacity, int luggageCapacityBags) {
+        this(id, brand, model, registrationNumber, dailyRentalRate, fourWheelDrive, seatingCapacity, luggageCapacityBags, "Diesel");
+    }
+
+    public SUV(String id, String brand, String model, String registrationNumber,
+               BigDecimal dailyRentalRate, boolean fourWheelDrive, int seatingCapacity) {
+        this(id, brand, model, registrationNumber, dailyRentalRate, fourWheelDrive, seatingCapacity, 3, "Diesel");
     }
 
     public SUV(String id, String brand, String model, String registrationNumber, BigDecimal dailyRentalRate) {
-        this(id, brand, model, registrationNumber, dailyRentalRate, true, 7);
+        this(id, brand, model, registrationNumber, dailyRentalRate, true, 7, 3, "Diesel");
     }
 
     @Override
@@ -65,5 +79,21 @@ public class SUV extends Vehicle {
 
     public void setSeatingCapacity(int seatingCapacity) {
         this.seatingCapacity = seatingCapacity;
+    }
+
+    public int getLuggageCapacityBags() {
+        return luggageCapacityBags;
+    }
+
+    public void setLuggageCapacityBags(int luggageCapacityBags) {
+        this.luggageCapacityBags = luggageCapacityBags;
+    }
+
+    public String getFuelType() {
+        return fuelType;
+    }
+
+    public void setFuelType(String fuelType) {
+        this.fuelType = fuelType;
     }
 }

@@ -44,6 +44,7 @@ public class JdbcVehicleRepository implements VehicleRepository {
                 SET vehicle_type = ?, brand = ?, model = ?, registration_number = ?,
                     rental_rate = ?, is_active = ?, seating_capacity = ?, fuel_type = ?,
                     engine_capacity_cc = ?, four_wheel_drive = ?, cargo_capacity_kg = ?,
+                    luggage_capacity_bags = ?, mileage_kmpl = ?,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
                 """;
@@ -51,8 +52,8 @@ public class JdbcVehicleRepository implements VehicleRepository {
                 INSERT INTO vehicles (
                     id, vehicle_type, brand, model, registration_number, rental_rate,
                     is_active, seating_capacity, fuel_type, engine_capacity_cc,
-                    four_wheel_drive, cargo_capacity_kg
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    four_wheel_drive, cargo_capacity_kg, luggage_capacity_bags, mileage_kmpl
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (Connection conn = connectionManager.getConnection()) {
@@ -67,7 +68,7 @@ public class JdbcVehicleRepository implements VehicleRepository {
             if (exists) {
                 try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
                     bindVehicleParameters(updateStmt, vehicle, 1);
-                    updateStmt.setString(12, vehicle.getId());
+                    updateStmt.setString(14, vehicle.getId());
                     updateStmt.executeUpdate();
                 }
             } else {
@@ -177,30 +178,40 @@ public class JdbcVehicleRepository implements VehicleRepository {
             stmt.setNull(startIndex + 8, Types.INTEGER);
             stmt.setNull(startIndex + 9, Types.BOOLEAN);
             stmt.setNull(startIndex + 10, Types.NUMERIC);
+            stmt.setInt(startIndex + 11, car.getLuggageCapacityBags());
+            stmt.setNull(startIndex + 12, Types.INTEGER);
         } else if (vehicle instanceof Bike bike) {
-            stmt.setNull(startIndex + 6, Types.INTEGER);
-            stmt.setNull(startIndex + 7, Types.VARCHAR);
+            stmt.setInt(startIndex + 6, bike.getSeatingCapacity());
+            stmt.setString(startIndex + 7, bike.getFuelType());
             stmt.setInt(startIndex + 8, bike.getEngineCapacityCc());
             stmt.setNull(startIndex + 9, Types.BOOLEAN);
             stmt.setNull(startIndex + 10, Types.NUMERIC);
+            stmt.setNull(startIndex + 11, Types.INTEGER);
+            stmt.setInt(startIndex + 12, bike.getMileageKmpl());
         } else if (vehicle instanceof SUV suv) {
             stmt.setInt(startIndex + 6, suv.getSeatingCapacity());
-            stmt.setNull(startIndex + 7, Types.VARCHAR);
+            stmt.setString(startIndex + 7, suv.getFuelType());
             stmt.setNull(startIndex + 8, Types.INTEGER);
             stmt.setBoolean(startIndex + 9, suv.isFourWheelDrive());
             stmt.setNull(startIndex + 10, Types.NUMERIC);
+            stmt.setInt(startIndex + 11, suv.getLuggageCapacityBags());
+            stmt.setNull(startIndex + 12, Types.INTEGER);
         } else if (vehicle instanceof Van van) {
-            stmt.setNull(startIndex + 6, Types.INTEGER);
-            stmt.setNull(startIndex + 7, Types.VARCHAR);
+            stmt.setInt(startIndex + 6, van.getSeatingCapacity());
+            stmt.setString(startIndex + 7, van.getFuelType());
             stmt.setNull(startIndex + 8, Types.INTEGER);
             stmt.setNull(startIndex + 9, Types.BOOLEAN);
             stmt.setBigDecimal(startIndex + 10, BigDecimal.valueOf(van.getCargoCapacityKg()));
+            stmt.setInt(startIndex + 11, van.getLuggageCapacityBags());
+            stmt.setNull(startIndex + 12, Types.INTEGER);
         } else {
             stmt.setNull(startIndex + 6, Types.INTEGER);
             stmt.setNull(startIndex + 7, Types.VARCHAR);
             stmt.setNull(startIndex + 8, Types.INTEGER);
             stmt.setNull(startIndex + 9, Types.BOOLEAN);
             stmt.setNull(startIndex + 10, Types.NUMERIC);
+            stmt.setNull(startIndex + 11, Types.INTEGER);
+            stmt.setNull(startIndex + 12, Types.INTEGER);
         }
     }
 
@@ -212,6 +223,8 @@ public class JdbcVehicleRepository implements VehicleRepository {
         String regNumber = rs.getString("registration_number");
         BigDecimal rate = rs.getBigDecimal("rental_rate");
         boolean active = rs.getBoolean("is_active");
+        int luggageBags = rs.getInt("luggage_capacity_bags");
+        int mileage = rs.getInt("mileage_kmpl");
 
         VehicleType type = VehicleType.valueOf(typeStr);
 
@@ -219,21 +232,26 @@ public class JdbcVehicleRepository implements VehicleRepository {
             case CAR -> {
                 int seats = rs.getInt("seating_capacity");
                 String fuel = rs.getString("fuel_type");
-                yield new Car(id, brand, model, regNumber, rate, (seats > 0 ? seats : 5), (fuel != null ? fuel : "Petrol"));
+                int bags = luggageBags > 0 ? luggageBags : 2;
+                yield new Car(id, brand, model, regNumber, rate, (seats > 0 ? seats : 5), (fuel != null ? fuel : "Petrol"), bags);
             }
             case BIKE -> {
                 int cc = rs.getInt("engine_capacity_cc");
-                yield new Bike(id, brand, model, regNumber, rate, (cc > 0 ? cc : 150));
+                int kmpl = mileage > 0 ? mileage : 45;
+                yield new Bike(id, brand, model, regNumber, rate, (cc > 0 ? cc : 150), kmpl);
             }
             case SUV -> {
                 boolean fwd = rs.getBoolean("four_wheel_drive");
                 int seats = rs.getInt("seating_capacity");
-                yield new SUV(id, brand, model, regNumber, rate, fwd, (seats > 0 ? seats : 7));
+                int bags = luggageBags > 0 ? luggageBags : 3;
+                yield new SUV(id, brand, model, regNumber, rate, fwd, (seats > 0 ? seats : 7), bags);
             }
             case VAN -> {
                 BigDecimal cargo = rs.getBigDecimal("cargo_capacity_kg");
                 double cargoVal = (cargo != null ? cargo.doubleValue() : 1000.0);
-                yield new Van(id, brand, model, regNumber, rate, cargoVal);
+                int seats = rs.getInt("seating_capacity");
+                int bags = luggageBags > 0 ? luggageBags : 5;
+                yield new Van(id, brand, model, regNumber, rate, cargoVal, (seats > 0 ? seats : 12), bags);
             }
         };
 

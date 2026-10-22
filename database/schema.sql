@@ -39,6 +39,8 @@ CREATE TABLE IF NOT EXISTS vehicles (
     engine_capacity_cc INT NULL,
     four_wheel_drive BOOLEAN NULL,
     cargo_capacity_kg NUMERIC(10, 2) NULL,
+    luggage_capacity_bags INT NULL,
+    mileage_kmpl INT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -93,3 +95,18 @@ CREATE TABLE IF NOT EXISTS maintenance (
 );
 
 CREATE INDEX IF NOT EXISTS idx_maintenance_vehicle ON maintenance(vehicle_id);
+
+-- 6. Vehicle Images Table (Binary image storage via BYTEA)
+CREATE TABLE IF NOT EXISTS vehicle_images (
+    id VARCHAR(50) PRIMARY KEY,
+    vehicle_id VARCHAR(50) NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
+    file_name VARCHAR(255) NOT NULL,
+    content_type VARCHAR(100) NOT NULL,
+    image_data BYTEA NOT NULL,
+    is_primary BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_vehicle_images_vehicle ON vehicle_images(vehicle_id);
+CREATE INDEX IF NOT EXISTS idx_vehicle_images_primary ON vehicle_images(vehicle_id, is_primary);

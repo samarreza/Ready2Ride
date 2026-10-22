@@ -16,16 +16,23 @@ public class Car extends Vehicle {
 
     private int seatingCapacity;
     private String fuelType;
+    private int luggageCapacityBags = 2;
 
     public Car(String id, String brand, String model, String registrationNumber,
-               BigDecimal dailyRentalRate, int seatingCapacity, String fuelType) {
+               BigDecimal dailyRentalRate, int seatingCapacity, String fuelType, int luggageCapacityBags) {
         super(id, brand, model, registrationNumber, dailyRentalRate);
         this.seatingCapacity = seatingCapacity;
         this.fuelType = fuelType;
+        this.luggageCapacityBags = luggageCapacityBags;
+    }
+
+    public Car(String id, String brand, String model, String registrationNumber,
+               BigDecimal dailyRentalRate, int seatingCapacity, String fuelType) {
+        this(id, brand, model, registrationNumber, dailyRentalRate, seatingCapacity, fuelType, 2);
     }
 
     public Car(String id, String brand, String model, String registrationNumber, BigDecimal dailyRentalRate) {
-        this(id, brand, model, registrationNumber, dailyRentalRate, 5, "Petrol");
+        this(id, brand, model, registrationNumber, dailyRentalRate, 5, "Petrol", 2);
     }
 
     @Override
@@ -65,5 +72,13 @@ public class Car extends Vehicle {
 
     public void setFuelType(String fuelType) {
         this.fuelType = fuelType;
+    }
+
+    public int getLuggageCapacityBags() {
+        return luggageCapacityBags;
+    }
+
+    public void setLuggageCapacityBags(int luggageCapacityBags) {
+        this.luggageCapacityBags = luggageCapacityBags;
     }
 }

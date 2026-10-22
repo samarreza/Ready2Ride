@@ -152,6 +152,41 @@ public class AuthenticationService {
     }
 
     /**
+     * Updates profile details of an authenticated customer in PostgreSQL.
+     */
+    public User updateProfile(String userId, String fullName, String phoneNumber, String drivingLicenseNumber) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User with ID '" + userId + "' was not found."));
+        if (fullName != null && !fullName.isBlank()) {
+            user.setFullName(fullName.trim());
+        }
+        if (phoneNumber != null && !phoneNumber.isBlank()) {
+            user.setPhoneNumber(phoneNumber.trim());
+        }
+        if (drivingLicenseNumber != null) {
+            user.setDrivingLicenseNumber(drivingLicenseNumber.trim());
+        }
+        return userRepository.save(user);
+    }
+
+    /**
+     * Retrieves all user accounts in PostgreSQL (for admin management).
+     */
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    /**
+     * Toggles the active status of an account.
+     */
+    public User toggleUserActive(String userId, boolean active) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User with ID '" + userId + "' was not found."));
+        user.setActive(active);
+        return userRepository.save(user);
+    }
+
+    /**
      * Checks if an administrator account has already been provisioned.
      *
      * @return true if at least one administrator exists

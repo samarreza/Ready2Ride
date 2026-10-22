@@ -4,8 +4,10 @@ import com.ready2ride.core.exception.VehicleNotFoundException;
 import com.ready2ride.core.model.Vehicle;
 import com.ready2ride.core.repository.VehicleRepository;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Service class orchestrating vehicle catalog operations and fleet management.
@@ -14,9 +16,15 @@ import java.util.Objects;
 public class VehicleService {
 
     private final VehicleRepository vehicleRepository;
+    private final com.ready2ride.core.repository.VehicleImageRepository imageRepository;
 
     public VehicleService(VehicleRepository vehicleRepository) {
+        this(vehicleRepository, null);
+    }
+
+    public VehicleService(VehicleRepository vehicleRepository, com.ready2ride.core.repository.VehicleImageRepository imageRepository) {
         this.vehicleRepository = Objects.requireNonNull(vehicleRepository, "VehicleRepository must not be null");
+        this.imageRepository = imageRepository;
     }
 
     /**
@@ -53,6 +61,21 @@ public class VehicleService {
     }
 
     /**
+     * Retrieves all active vehicles filtered by type classification.
+     *
+     * @param type vehicle classification (CAR, BIKE, SUV, VAN)
+     * @return matching vehicles
+     */
+    public List<Vehicle> getVehiclesByType(com.ready2ride.core.model.VehicleType type) {
+        if (type == null) {
+            return getAllVehicles();
+        }
+        return vehicleRepository.findAll().stream()
+                .filter(v -> v.getVehicleType() == type)
+                .toList();
+    }
+
+    /**
      * Checks if a vehicle exists by ID.
      *
      * @param vehicleId vehicle identifier
@@ -70,5 +93,52 @@ public class VehicleService {
      */
     public boolean removeVehicle(String vehicleId) {
         return vehicleRepository.deleteById(vehicleId);
+    }
+
+    /**
+     * Retrieves the primary display image for a vehicle.
+     *
+     * @param vehicleId vehicle identifier
+     * @return Optional containing the primary vehicle image if stored
+     */
+    public java.util.Optional<com.ready2ride.core.model.VehicleImage> getPrimaryImage(String vehicleId) {
+        if (imageRepository == null || vehicleId == null) {
+            return java.util.Optional.empty();
+        }
+        return imageRepository.findPrimaryByVehicleId(vehicleId);
+    }
+
+    /**
+     * Retrieves all images associated with a vehicle.
+     *
+     * @param vehicleId vehicle identifier
+     * @return list of vehicle images
+     */
+    public List<com.ready2ride.core.model.VehicleImage> getVehicleImages(String vehicleId) {
+        if (imageRepository == null || vehicleId == null) {
+            return Collections.emptyList();
+        }
+        return imageRepository.findByVehicleId(vehicleId);
+    }
+
+    /**
+     * Saves or replaces a vehicle image in persistent storage.
+     *
+     * @param image vehicle image entity
+     * @return saved vehicle image
+     */
+    public com.ready2ride.core.model.VehicleImage saveVehicleImage(com.ready2ride.core.model.VehicleImage image) {
+        if (imageRepository == null) {
+            throw new IllegalStateException("VehicleImageRepository is not configured in this VehicleService instance.");
+        }
+        return imageRepository.save(image);
+    }
+
+    public com.ready2ride.core.repository.VehicleRepository getVehicleRepository() {
+        return vehicleRepository;
+    }
+
+    public com.ready2ride.core.repository.VehicleImageRepository getImageRepository() {
+        return imageRepository;
     }
 }

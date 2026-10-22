@@ -15,15 +15,24 @@ import java.time.LocalDateTime;
 public class Bike extends Vehicle {
 
     private int engineCapacityCc;
+    private int mileageKmpl = 45;
+    private int seatingCapacity = 2;
+    private String fuelType = "Petrol";
+
+    public Bike(String id, String brand, String model, String registrationNumber,
+                BigDecimal hourlyRentalRate, int engineCapacityCc, int mileageKmpl) {
+        super(id, brand, model, registrationNumber, hourlyRentalRate);
+        this.engineCapacityCc = engineCapacityCc;
+        this.mileageKmpl = mileageKmpl;
+    }
 
     public Bike(String id, String brand, String model, String registrationNumber,
                 BigDecimal hourlyRentalRate, int engineCapacityCc) {
-        super(id, brand, model, registrationNumber, hourlyRentalRate);
-        this.engineCapacityCc = engineCapacityCc;
+        this(id, brand, model, registrationNumber, hourlyRentalRate, engineCapacityCc, 45);
     }
 
     public Bike(String id, String brand, String model, String registrationNumber, BigDecimal hourlyRentalRate) {
-        this(id, brand, model, registrationNumber, hourlyRentalRate, 150);
+        this(id, brand, model, registrationNumber, hourlyRentalRate, 150, 45);
     }
 
     @Override
@@ -55,5 +64,29 @@ public class Bike extends Vehicle {
 
     public void setEngineCapacityCc(int engineCapacityCc) {
         this.engineCapacityCc = engineCapacityCc;
+    }
+
+    public int getMileageKmpl() {
+        return mileageKmpl;
+    }
+
+    public void setMileageKmpl(int mileageKmpl) {
+        this.mileageKmpl = mileageKmpl;
+    }
+
+    public int getSeatingCapacity() {
+        return seatingCapacity;
+    }
+
+    public void setSeatingCapacity(int seatingCapacity) {
+        this.seatingCapacity = seatingCapacity;
+    }
+
+    public String getFuelType() {
+        return fuelType;
+    }
+
+    public void setFuelType(String fuelType) {
+        this.fuelType = fuelType;
     }
 }

@@ -119,4 +119,35 @@ public final class RepositoryFactory {
         Objects.requireNonNull(connectionManager, "DatabaseConnectionManager must not be null");
         return new JdbcMaintenanceRepository(connectionManager);
     }
+
+    /**
+     * Creates a new PostgreSQL JDBC vehicle image repository.
+     *
+     * @param connectionManager active database connection manager
+     * @return {@link JdbcVehicleImageRepository}
+     */
+    public static VehicleImageRepository createJdbcVehicleImageRepository(DatabaseConnectionManager connectionManager) {
+        Objects.requireNonNull(connectionManager, "DatabaseConnectionManager must not be null");
+        return new com.ready2ride.core.repository.jdbc.JdbcVehicleImageRepository(connectionManager);
+    }
+
+    /**
+     * Creates a new in-memory vehicle image repository.
+     *
+     * @return {@link InMemoryVehicleImageRepository}
+     */
+    public static VehicleImageRepository createInMemoryVehicleImageRepository() {
+        return new InMemoryVehicleImageRepository();
+    }
+
+    /**
+     * Creates a new PostgreSQL JDBC favorites repository.
+     *
+     * @param connectionManager active database connection manager
+     * @return {@link FavoritesRepository}
+     */
+    public static FavoritesRepository createJdbcFavoritesRepository(DatabaseConnectionManager connectionManager) {
+        Objects.requireNonNull(connectionManager, "DatabaseConnectionManager must not be null");
+        return new com.ready2ride.core.repository.jdbc.JdbcFavoritesRepository(connectionManager);
+    }
 }
