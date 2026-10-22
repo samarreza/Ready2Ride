@@ -134,6 +134,93 @@ public class VehicleService {
         return imageRepository.save(image);
     }
 
+    /**
+     * Retrieves all vehicles owned by a specific rental provider.
+     *
+     * @param providerId rental provider user ID
+     * @return unmodifiable list of vehicles belonging to the provider
+     */
+    public List<Vehicle> getVehiclesByProvider(String providerId) {
+        if (providerId == null || providerId.isBlank()) {
+            return Collections.emptyList();
+        }
+        return vehicleRepository.findByProviderId(providerId.trim());
+    }
+
+    /**
+     * Registers a new vehicle into the fleet associated with the authenticated rental provider.
+     *
+     * @param vehicle    vehicle entity
+     * @param providerId authenticated rental provider ID
+     * @return saved vehicle
+     */
+    public Vehicle registerProviderVehicle(Vehicle vehicle, String providerId) {
+        Objects.requireNonNull(vehicle, "Vehicle must not be null");
+        Objects.requireNonNull(providerId, "Provider ID must not be null");
+        vehicle.setProviderId(providerId.trim());
+        return vehicleRepository.save(vehicle);
+    }
+
+    /**
+     * Updates an existing vehicle with strict provider ownership verification.
+     *
+     * @param vehicle    vehicle entity with updated attributes
+     * @param providerId authenticated rental provider ID
+     * @return updated vehicle
+     * @throws SecurityException if the vehicle belongs to another provider
+     */
+    public Vehicle updateProviderVehicle(Vehicle vehicle, String providerId) {
+        Objects.requireNonNull(vehicle, "Vehicle must not be null");
+        Objects.requireNonNull(providerId, "Provider ID must not be null");
+
+        Vehicle existing = getVehicleById(vehicle.getId());
+        if (existing.getProviderId() != null && !existing.getProviderId().equals(providerId.trim())) {
+            throw new SecurityException("Unauthorized: Cannot modify a vehicle owned by another provider.");
+        }
+        vehicle.setProviderId(providerId.trim());
+        return vehicleRepository.save(vehicle);
+    }
+
+    /**
+     * Deactivates a vehicle with strict provider ownership verification.
+     *
+     * @param vehicleId  vehicle identifier
+     * @param providerId authenticated rental provider ID
+     * @return true if deactivated
+     * @throws SecurityException if the vehicle belongs to another provider
+     */
+    public boolean deactivateProviderVehicle(String vehicleId, String providerId) {
+        Objects.requireNonNull(vehicleId, "Vehicle ID must not be null");
+        Objects.requireNonNull(providerId, "Provider ID must not be null");
+
+        Vehicle existing = getVehicleById(vehicleId);
+        if (existing.getProviderId() != null && !existing.getProviderId().equals(providerId.trim())) {
+            throw new SecurityException("Unauthorized: Cannot deactivate a vehicle owned by another provider.");
+        }
+        existing.setActive(false);
+        vehicleRepository.save(existing);
+        return true;
+    }
+
+    /**
+     * Persists or replaces an image for a vehicle with strict provider ownership verification.
+     *
+     * @param image      vehicle image entity
+     * @param providerId authenticated rental provider ID
+     * @return saved image
+     * @throws SecurityException if the vehicle belongs to another provider
+     */
+    public com.ready2ride.core.model.VehicleImage saveProviderVehicleImage(com.ready2ride.core.model.VehicleImage image, String providerId) {
+        Objects.requireNonNull(image, "Image must not be null");
+        Objects.requireNonNull(providerId, "Provider ID must not be null");
+
+        Vehicle existing = getVehicleById(image.getVehicleId());
+        if (existing.getProviderId() != null && !existing.getProviderId().equals(providerId.trim())) {
+            throw new SecurityException("Unauthorized: Cannot upload images for a vehicle owned by another provider.");
+        }
+        return saveVehicleImage(image);
+    }
+
     public com.ready2ride.core.repository.VehicleRepository getVehicleRepository() {
         return vehicleRepository;
     }

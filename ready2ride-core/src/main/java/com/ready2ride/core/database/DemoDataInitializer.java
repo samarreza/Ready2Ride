@@ -93,6 +93,20 @@ public class DemoDataInitializer {
                 LOGGER.info("Seeded demo admin account: admin@ready2ride.com");
             }
 
+            if (!userRepo.existsByEmail("provider@ready2ride.com")) {
+                com.ready2ride.core.model.User provider = new com.ready2ride.core.model.User(
+                        "PROV-DEV-001",
+                        "Rajesh Sharma (Apex Fleet Rentals)",
+                        "provider@ready2ride.com",
+                        "+91 98111 22334",
+                        com.ready2ride.core.util.PasswordHasher.hashPassword("Provider@123"),
+                        com.ready2ride.core.model.UserRole.RENTAL_PROVIDER,
+                        "DL-PROV-55443"
+                );
+                userRepo.save(provider);
+                LOGGER.info("Seeded demo rental provider account: provider@ready2ride.com");
+            }
+
             if (!userRepo.existsByEmail("john.doe@ready2ride.com")) {
                 com.ready2ride.core.model.User customer = new com.ready2ride.core.model.User(
                         "CUST-DEV-001",

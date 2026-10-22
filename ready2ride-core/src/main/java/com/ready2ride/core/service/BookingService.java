@@ -223,4 +223,25 @@ public class BookingService {
             }
         }
     }
+
+    /**
+     * Retrieves all bookings for vehicles owned by a specific rental provider.
+     *
+     * @param providerId rental provider user ID
+     * @return unmodifiable list of matching bookings sorted newest pickup first
+     */
+    public List<Booking> getBookingsForProvider(String providerId) {
+        if (providerId == null || providerId.isBlank()) {
+            return java.util.Collections.emptyList();
+        }
+        List<Vehicle> providerVehicles = vehicleRepository.findByProviderId(providerId.trim());
+        if (providerVehicles.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        java.util.Set<String> vehicleIds = providerVehicles.stream().map(Vehicle::getId).collect(java.util.stream.Collectors.toSet());
+        return bookingRepository.findAll().stream()
+                .filter(b -> vehicleIds.contains(b.getVehicleId()))
+                .sorted(java.util.Comparator.comparing(Booking::getPickupDateTime).reversed())
+                .toList();
+    }
 }

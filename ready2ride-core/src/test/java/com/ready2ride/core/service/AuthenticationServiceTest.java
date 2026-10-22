@@ -152,4 +152,33 @@ class AuthenticationServiceTest {
                 ));
         assertTrue(ex.getMessage().contains("already exists"));
     }
+
+    @Test
+    @DisplayName("11. Registering rental provider succeeds and sets RENTAL_PROVIDER role")
+    void testRegisterRentalProvider() {
+        User provider = authService.registerRentalProvider(
+                "Apex Rentals", "host@apexrentals.com", "+91-9876543210", "HostPass123!", "HOST-LIC-9988"
+        );
+
+        assertNotNull(provider);
+        assertEquals(UserRole.RENTAL_PROVIDER, provider.getRole());
+        assertTrue(provider.isRentalProvider());
+        assertFalse(provider.isCustomer());
+        assertFalse(provider.isAdmin());
+
+        User authenticated = authService.authenticate("host@apexrentals.com", "HostPass123!");
+        assertNotNull(authenticated);
+        assertEquals(provider.getId(), authenticated.getId());
+        assertEquals(UserRole.RENTAL_PROVIDER, authenticated.getRole());
+    }
+
+    @Test
+    @DisplayName("12. Public registration gateway rejects ADMIN role self-assignment")
+    void testRegisterUserRejectsAdminRole() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                authService.registerUser(
+                        "Hacker Admin", "hack@example.com", "+1-555-9999", "Pass123!", null, UserRole.ADMIN
+                ));
+        assertTrue(ex.getMessage().contains("Public registration permits only CUSTOMER or RENTAL_PROVIDER"));
+    }
 }

@@ -84,6 +84,14 @@ class PostgresIntegrationTest {
                 initializer.executeScriptFile(schemaPath);
             }
 
+            Path migV6Path = Paths.get("..", "database", "migration_v5_to_v6_rental_provider.sql");
+            if (!migV6Path.toFile().exists()) {
+                migV6Path = Paths.get("database", "migration_v5_to_v6_rental_provider.sql");
+            }
+            if (migV6Path.toFile().exists()) {
+                initializer.executeScriptFile(migV6Path);
+            }
+
             // Clean up test data from any previous runs to ensure repeatable execution
             cleanupPreviousTestData();
 

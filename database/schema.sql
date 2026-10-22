@@ -16,11 +16,15 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(100) NOT NULL UNIQUE,
     phone_number VARCHAR(25) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    role VARCHAR(20) NOT NULL CHECK (role IN ('CUSTOMER', 'ADMIN')),
+    role VARCHAR(20) NOT NULL CHECK (role IN ('CUSTOMER', 'RENTAL_PROVIDER', 'ADMIN')),
     driving_license_number VARCHAR(50) NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Ensure users role check supports RENTAL_PROVIDER on existing tables
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('CUSTOMER', 'RENTAL_PROVIDER', 'ADMIN'));
 
 -- Index for fast user lookup by email during authentication
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -41,9 +45,15 @@ CREATE TABLE IF NOT EXISTS vehicles (
     cargo_capacity_kg NUMERIC(10, 2) NULL,
     luggage_capacity_bags INT NULL,
     mileage_kmpl INT NULL,
+    provider_id VARCHAR(50) NULL REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Ensure provider_id exists on legacy tables before index creation
+ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS provider_id VARCHAR(50) NULL REFERENCES users(id) ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS idx_vehicles_provider ON vehicles(provider_id);
 
 -- Index for searching active fleet items by type
 CREATE INDEX IF NOT EXISTS idx_vehicles_type_active ON vehicles(vehicle_type, is_active);

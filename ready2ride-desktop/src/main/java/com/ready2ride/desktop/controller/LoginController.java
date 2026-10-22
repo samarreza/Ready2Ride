@@ -130,7 +130,7 @@ public class LoginController {
             User user = authService.authenticate(username, password);
             UserSession.getInstance().login(user);
 
-            if (user.getRole() == UserRole.ADMIN) {
+            if (user.getRole() == UserRole.RENTAL_PROVIDER || user.getRole() == UserRole.ADMIN) {
                 onNavigateToDashboard.accept(user.getFullName());
             } else {
                 if (onCustomerLoginSuccess != null) {
@@ -151,7 +151,7 @@ public class LoginController {
     private void handlePreviewDashboard() {
         view.clearError();
         UserSession.getInstance().loginAsDemo();
-        onNavigateToDashboard.accept("Admin Preview (Demo)");
+        onNavigateToDashboard.accept("Rental Provider Preview (Demo)");
     }
 
     private void handleForgotPassword() {

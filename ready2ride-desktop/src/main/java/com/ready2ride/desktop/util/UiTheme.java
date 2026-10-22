@@ -84,6 +84,8 @@ public final class UiTheme {
         // Prevent instantiation
     }
 
+    public static final Color COLOR_BORDER = COLOR_BORDER_INPUT;
+
     // --- Background & Border Helpers ---
 
     public static Background fillBackground(Color color) {
@@ -96,6 +98,14 @@ public final class UiTheme {
 
     public static Border strokeBorder(Color color, double radius, double width) {
         return new Border(new BorderStroke(color, BorderStrokeStyle.SOLID, new CornerRadii(radius), new BorderWidths(width)));
+    }
+
+    public static Border roundedBorder(Color color, double radius, double width) {
+        return strokeBorder(color, radius, width);
+    }
+
+    public static Border bottomBorder(Color color, double width) {
+        return new Border(new BorderStroke(color, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(0, 0, width, 0)));
     }
 
     public static DropShadow cardShadow() {

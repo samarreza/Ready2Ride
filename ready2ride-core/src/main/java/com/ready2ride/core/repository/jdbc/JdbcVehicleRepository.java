@@ -44,7 +44,7 @@ public class JdbcVehicleRepository implements VehicleRepository {
                 SET vehicle_type = ?, brand = ?, model = ?, registration_number = ?,
                     rental_rate = ?, is_active = ?, seating_capacity = ?, fuel_type = ?,
                     engine_capacity_cc = ?, four_wheel_drive = ?, cargo_capacity_kg = ?,
-                    luggage_capacity_bags = ?, mileage_kmpl = ?,
+                    luggage_capacity_bags = ?, mileage_kmpl = ?, provider_id = ?,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
                 """;
@@ -52,8 +52,8 @@ public class JdbcVehicleRepository implements VehicleRepository {
                 INSERT INTO vehicles (
                     id, vehicle_type, brand, model, registration_number, rental_rate,
                     is_active, seating_capacity, fuel_type, engine_capacity_cc,
-                    four_wheel_drive, cargo_capacity_kg, luggage_capacity_bags, mileage_kmpl
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    four_wheel_drive, cargo_capacity_kg, luggage_capacity_bags, mileage_kmpl, provider_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (Connection conn = connectionManager.getConnection()) {
@@ -68,7 +68,7 @@ public class JdbcVehicleRepository implements VehicleRepository {
             if (exists) {
                 try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
                     bindVehicleParameters(updateStmt, vehicle, 1);
-                    updateStmt.setString(14, vehicle.getId());
+                    updateStmt.setString(15, vehicle.getId());
                     updateStmt.executeUpdate();
                 }
             } else {
@@ -213,6 +213,34 @@ public class JdbcVehicleRepository implements VehicleRepository {
             stmt.setNull(startIndex + 11, Types.INTEGER);
             stmt.setNull(startIndex + 12, Types.INTEGER);
         }
+
+        // Parameter 14: provider_id (foreign key to users table)
+        if (vehicle.getProviderId() != null && !vehicle.getProviderId().isBlank()) {
+            stmt.setString(startIndex + 13, vehicle.getProviderId().trim());
+        } else {
+            stmt.setNull(startIndex + 13, Types.VARCHAR);
+        }
+    }
+
+    @Override
+    public List<Vehicle> findByProviderId(String providerId) {
+        if (providerId == null || providerId.isBlank()) {
+            return Collections.emptyList();
+        }
+        String sql = "SELECT * FROM vehicles WHERE provider_id = ? ORDER BY created_at DESC";
+        try (Connection conn = connectionManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, providerId.trim());
+            try (ResultSet rs = stmt.executeQuery()) {
+                List<Vehicle> list = new ArrayList<>();
+                while (rs.next()) {
+                    list.add(mapRowToVehicle(rs));
+                }
+                return list;
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException("Failed to query vehicles by provider ID '" + providerId + "': " + e.getMessage(), e);
+        }
     }
 
     private Vehicle mapRowToVehicle(ResultSet rs) throws SQLException {
@@ -256,6 +284,12 @@ public class JdbcVehicleRepository implements VehicleRepository {
         };
 
         vehicle.setActive(active);
+        try {
+            String provId = rs.getString("provider_id");
+            vehicle.setProviderId(provId);
+        } catch (SQLException ignored) {
+            // column may not exist yet in legacy or mock contexts
+        }
         return vehicle;
     }
 }

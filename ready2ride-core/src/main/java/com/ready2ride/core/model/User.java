@@ -130,6 +130,10 @@ public class User {
         return this.role == UserRole.CUSTOMER;
     }
 
+    public boolean isRentalProvider() {
+        return this.role == UserRole.RENTAL_PROVIDER;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

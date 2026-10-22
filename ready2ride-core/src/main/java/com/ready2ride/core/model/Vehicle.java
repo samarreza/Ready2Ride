@@ -18,6 +18,7 @@ public abstract class Vehicle {
     private String registrationNumber;
     private BigDecimal rentalRate;
     private boolean isActive = true;
+    private String providerId;
 
     /**
      * Constructs a new Vehicle with required core attributes.
@@ -118,6 +119,14 @@ public abstract class Vehicle {
 
     public void setActive(boolean isActive) {
         this.isActive = isActive;
+    }
+
+    public String getProviderId() {
+        return providerId;
+    }
+
+    public void setProviderId(String providerId) {
+        this.providerId = providerId;
     }
 
     @Override

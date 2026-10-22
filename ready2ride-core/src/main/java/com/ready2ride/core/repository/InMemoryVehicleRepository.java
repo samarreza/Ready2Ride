@@ -47,6 +47,16 @@ public class InMemoryVehicleRepository implements VehicleRepository {
     }
 
     @Override
+    public List<Vehicle> findByProviderId(String providerId) {
+        if (providerId == null) {
+            return Collections.emptyList();
+        }
+        return vehicleMap.values().stream()
+                .filter(v -> providerId.equals(v.getProviderId()))
+                .toList();
+    }
+
+    @Override
     public boolean deleteById(String id) {
         if (id == null) {
             return false;

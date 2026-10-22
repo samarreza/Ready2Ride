@@ -6,6 +6,7 @@ package com.ready2ride.core.model;
  */
 public enum UserRole {
     CUSTOMER("Customer"),
+    RENTAL_PROVIDER("Rental Provider"),
     ADMIN("Administrator");
 
     private final String displayName;

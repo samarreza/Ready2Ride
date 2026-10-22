@@ -108,6 +108,61 @@ public class AuthenticationService {
     }
 
     /**
+     * Registers a new rental provider account.
+     * Public self-registration is strictly restricted to {@link UserRole#RENTAL_PROVIDER} or {@link UserRole#CUSTOMER}.
+     *
+     * @param fullName             provider's full name
+     * @param email                unique email address
+     * @param phoneNumber          contact phone number
+     * @param rawPassword          plaintext password
+     * @param drivingLicenseNumber driver's license number or ID proof
+     * @return persisted rental provider {@link User}
+     */
+    public User registerRentalProvider(String fullName, String email, String phoneNumber,
+                                       String rawPassword, String drivingLicenseNumber) {
+        validateRegistrationInputs(fullName, email, phoneNumber, rawPassword);
+
+        String normalizedEmail = email.trim().toLowerCase();
+        if (userRepository.existsByEmail(normalizedEmail)) {
+            throw new UserAlreadyExistsException("An account with email '" + normalizedEmail + "' already exists.");
+        }
+
+        String id = "PROV-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        String passwordHash = PasswordHasher.hashPassword(rawPassword);
+
+        User provider = new User(
+                id,
+                fullName.trim(),
+                normalizedEmail,
+                phoneNumber.trim(),
+                passwordHash,
+                UserRole.RENTAL_PROVIDER,
+                drivingLicenseNumber != null ? drivingLicenseNumber.trim() : null,
+                true,
+                LocalDateTime.now()
+        );
+
+        return userRepository.save(provider);
+    }
+
+    /**
+     * Public registration gateway supporting exactly the two active account types:
+     * {@link UserRole#CUSTOMER} and {@link UserRole#RENTAL_PROVIDER}.
+     * Self-assignment of administrative roles is strictly rejected.
+     */
+    public User registerUser(String fullName, String email, String phoneNumber,
+                             String rawPassword, String drivingLicenseNumber, UserRole role) {
+        if (role == null || (role != UserRole.CUSTOMER && role != UserRole.RENTAL_PROVIDER)) {
+            throw new IllegalArgumentException("Public registration permits only CUSTOMER or RENTAL_PROVIDER account roles.");
+        }
+        if (role == UserRole.RENTAL_PROVIDER) {
+            return registerRentalProvider(fullName, email, phoneNumber, rawPassword, drivingLicenseNumber);
+        } else {
+            return registerCustomer(fullName, email, phoneNumber, rawPassword, drivingLicenseNumber);
+        }
+    }
+
+    /**
      * Safe bootstrap operation to create the initial administrator account.
      * Strictly refuses to overwrite if any administrator already exists in the system.
      *

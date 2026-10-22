@@ -72,6 +72,10 @@ public final class UserSession {
         return currentUser != null && currentUser.getRole() == UserRole.CUSTOMER;
     }
 
+    public synchronized boolean isRentalProvider() {
+        return currentUser != null && (currentUser.getRole() == UserRole.RENTAL_PROVIDER || currentUser.getRole() == UserRole.ADMIN);
+    }
+
     public synchronized String getDisplayName() {
         if (currentUser != null) {
             return currentUser.getFullName();

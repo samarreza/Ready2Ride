@@ -45,6 +45,7 @@ public class HomeController {
     private final Consumer<VehicleType> onOpenVehicleCatalog;
     private final SearchNavigator onSearchVehicleCatalog;
     private final Runnable onNavigateToLogin;
+    private final Runnable onNavigateToRegister;
 
     @FunctionalInterface
     public interface SearchNavigator {
@@ -57,7 +58,8 @@ public class HomeController {
                           AuthenticationService authService,
                           Consumer<VehicleType> onOpenVehicleCatalog,
                           SearchNavigator onSearchVehicleCatalog,
-                          Runnable onNavigateToLogin) {
+                          Runnable onNavigateToLogin,
+                          Runnable onNavigateToRegister) {
         this.view = Objects.requireNonNull(view, "HomeView must not be null");
         this.vehicleService = Objects.requireNonNull(vehicleService, "VehicleService must not be null");
         this.bookingService = Objects.requireNonNull(bookingService, "BookingService must not be null");
@@ -65,6 +67,7 @@ public class HomeController {
         this.onOpenVehicleCatalog = Objects.requireNonNull(onOpenVehicleCatalog, "Catalog navigation callback must not be null");
         this.onSearchVehicleCatalog = onSearchVehicleCatalog;
         this.onNavigateToLogin = Objects.requireNonNull(onNavigateToLogin, "Login navigation callback must not be null");
+        this.onNavigateToRegister = onNavigateToRegister;
 
         initEventHandlers();
         loadHomeDataFromDatabase();
@@ -75,9 +78,20 @@ public class HomeController {
                           BookingService bookingService,
                           AuthenticationService authService,
                           Consumer<VehicleType> onOpenVehicleCatalog,
+                          SearchNavigator onSearchVehicleCatalog,
                           Runnable onNavigateToLogin) {
         this(view, vehicleService, bookingService, authService, onOpenVehicleCatalog,
-             (type, pickup, returnDate, loc) -> onOpenVehicleCatalog.accept(type), onNavigateToLogin);
+             onSearchVehicleCatalog, onNavigateToLogin, null);
+    }
+
+    public HomeController(HomeView view,
+                          VehicleService vehicleService,
+                          BookingService bookingService,
+                          AuthenticationService authService,
+                          Consumer<VehicleType> onOpenVehicleCatalog,
+                          Runnable onNavigateToLogin) {
+        this(view, vehicleService, bookingService, authService, onOpenVehicleCatalog,
+             (type, pickup, returnDate, loc) -> onOpenVehicleCatalog.accept(type), onNavigateToLogin, null);
     }
 
     private void initEventHandlers() {
@@ -101,7 +115,9 @@ public class HomeController {
 
         view.getNavLoginBtn().setOnAction(e -> onNavigateToLogin.run());
         view.getNavRegisterBtn().setOnAction(e -> {
-            if (authService != null) {
+            if (onNavigateToRegister != null) {
+                onNavigateToRegister.run();
+            } else if (authService != null) {
                 RegisterDialog.show(authService);
             }
         });

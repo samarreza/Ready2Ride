@@ -56,10 +56,10 @@ public class DashboardController {
     }
 
     private void initEventHandlers() {
-        // Dashboard Overview
+        // Overview Dashboard
         view.getNavDashboardBtn().setOnAction(e -> showDashboard());
 
-        // Vehicles Module (Live PostgreSQL Fleet Management & Image Upload)
+        // My Vehicles (Live Provider Inventory)
         view.getNavVehiclesBtn().setOnAction(e -> {
             view.updateActiveNavButton(view.getNavVehiclesBtn());
             if (vehicleService != null) {
@@ -67,7 +67,15 @@ public class DashboardController {
             }
         });
 
-        // Bookings Module (Live PostgreSQL Bookings)
+        // Add Vehicle
+        view.getNavAddVehicleBtn().setOnAction(e -> {
+            view.updateActiveNavButton(view.getNavAddVehicleBtn());
+            if (vehicleService != null) {
+                view.showAddVehicleView(vehicleService, this::showDashboard);
+            }
+        });
+
+        // Provider Bookings
         view.getNavBookingsBtn().setOnAction(e -> {
             view.updateActiveNavButton(view.getNavBookingsBtn());
             if (bookingService != null) {
@@ -75,32 +83,19 @@ public class DashboardController {
             }
         });
 
-        // Users & Customers Module (Live PostgreSQL Directory)
-        view.getNavCustomersBtn().setOnAction(e -> {
-            view.updateActiveNavButton(view.getNavCustomersBtn());
+        // Provider Profile & Settings
+        view.getNavProfileBtn().setOnAction(e -> {
+            view.updateActiveNavButton(view.getNavProfileBtn());
             if (authService != null) {
-                view.showLiveUsersManagement(authService, this::showDashboard);
+                view.showProfileManagement(authService, this::showDashboard);
             }
         });
 
-        // Payments Module (Live PostgreSQL Payments)
-        view.getNavPaymentsBtn().setOnAction(e -> {
-            view.updateActiveNavButton(view.getNavPaymentsBtn());
-            if (paymentService != null) {
-                view.showLivePaymentsManagement(paymentService, this::showDashboard);
-            }
+        // Logout Action (clears session and returns to login)
+        view.getLogoutBtn().setOnAction(e -> {
+            com.ready2ride.desktop.util.UserSession.getInstance().logout();
+            onLogout.run();
         });
-
-        // Maintenance Module (Live PostgreSQL Maintenance)
-        view.getNavMaintenanceBtn().setOnAction(e -> {
-            view.updateActiveNavButton(view.getNavMaintenanceBtn());
-            if (maintenanceService != null) {
-                view.showLiveMaintenanceManagement(maintenanceService, vehicleService, this::showDashboard);
-            }
-        });
-
-        // Logout Action
-        view.getLogoutBtn().setOnAction(e -> onLogout.run());
     }
 
     private void showDashboard() {

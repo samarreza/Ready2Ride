@@ -57,7 +57,7 @@ public class Ready2RideApplication extends Application {
     public static final String LOGIN_TITLE = "Ready2Ride — Sign In";
     public static final String REGISTER_TITLE = "Ready2Ride — Create an Account";
     public static final String CUSTOMER_DASHBOARD_TITLE = "Ready2Ride — Customer Dashboard & My Bookings";
-    public static final String DASHBOARD_TITLE = "Ready2Ride — Administrator Console";
+    public static final String DASHBOARD_TITLE = "Ready2Ride — Rental Provider Dashboard";
 
     private Stage primaryStage;
     private DatabaseConnectionManager connectionManager;
@@ -81,6 +81,18 @@ public class Ready2RideApplication extends Application {
         LOGGER.info("Initializing Ready2Ride desktop application backend services...");
         try {
             connectionManager = new DatabaseConnectionManager();
+
+            // Non-destructive schema migration for Rental Provider role and vehicle ownership
+            try (java.sql.Connection conn = connectionManager.getConnection();
+                 java.sql.Statement stmt = conn.createStatement()) {
+                stmt.execute("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;");
+                stmt.execute("ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('CUSTOMER', 'RENTAL_PROVIDER', 'ADMIN'));");
+                stmt.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS provider_id VARCHAR(50) NULL REFERENCES users(id) ON DELETE SET NULL;");
+                stmt.execute("CREATE INDEX IF NOT EXISTS idx_vehicles_provider ON vehicles(provider_id);");
+            } catch (Exception e) {
+                LOGGER.log(Level.INFO, "Notice during schema verification: " + e.getMessage());
+            }
+
             userRepository = RepositoryFactory.createJdbcUserRepository(connectionManager);
             vehicleRepository = RepositoryFactory.createJdbcVehicleRepository(connectionManager);
             vehicleImageRepository = RepositoryFactory.createJdbcVehicleImageRepository(connectionManager);
@@ -133,7 +145,8 @@ public class Ready2RideApplication extends Application {
                 authService,
                 this::showVehicleCatalogScene,
                 this::showVehicleCatalogScene,
-                this::showLoginScene
+                this::showLoginScene,
+                this::showRegisterScene
         );
 
         Scene homeScene = new Scene(homeView.getRootNode(), 1380, 880);

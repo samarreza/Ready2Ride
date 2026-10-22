@@ -43,6 +43,14 @@ public interface VehicleRepository {
     boolean existsById(String id);
 
     /**
+     * Retrieves all vehicles owned by a specific rental provider.
+     *
+     * @param providerId rental provider user ID
+     * @return list of vehicles owned by the provider
+     */
+    List<Vehicle> findByProviderId(String providerId);
+
+    /**
      * Deletes a vehicle by its unique identifier.
      *
      * @param id vehicle ID
