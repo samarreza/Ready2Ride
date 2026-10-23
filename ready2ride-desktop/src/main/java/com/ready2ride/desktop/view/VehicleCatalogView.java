@@ -154,7 +154,13 @@ public class VehicleCatalogView {
             applyFilters();
         });
         topNavBar.setOnNavigateMyBookings(onOpenMyBookings);
-        topNavBar.setOnNavigateAboutUs(InfoDialogs::showAboutUsDialog);
+        topNavBar.setOnNavigateAboutUs(() -> {
+            if (TopNavBar.getDefaultOnNavigateAboutUs() != null) {
+                TopNavBar.getDefaultOnNavigateAboutUs().run();
+            } else {
+                InfoDialogs.showAboutUsDialog();
+            }
+        });
         topNavBar.setOnNavigateContact(InfoDialogs::showContactDialog);
         topNavBar.setOnSearch(searchField::requestFocus);
         topNavBar.setOnLogin(onOpenLogin);

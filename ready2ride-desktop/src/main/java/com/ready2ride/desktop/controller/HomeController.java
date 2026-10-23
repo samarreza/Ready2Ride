@@ -49,6 +49,7 @@ public class HomeController {
     private final Runnable onNavigateToRegister;
 
     private final Runnable onOpenMyBookings;
+    private final Runnable onNavigateToAboutUs;
 
     @FunctionalInterface
     public interface SearchNavigator {
@@ -63,7 +64,8 @@ public class HomeController {
                           SearchNavigator onSearchVehicleCatalog,
                           Runnable onNavigateToLogin,
                           Runnable onNavigateToRegister,
-                          Runnable onOpenMyBookings) {
+                          Runnable onOpenMyBookings,
+                          Runnable onNavigateToAboutUs) {
         this.view = Objects.requireNonNull(view, "HomeView must not be null");
         this.vehicleService = Objects.requireNonNull(vehicleService, "VehicleService must not be null");
         this.bookingService = Objects.requireNonNull(bookingService, "BookingService must not be null");
@@ -73,6 +75,7 @@ public class HomeController {
         this.onNavigateToLogin = Objects.requireNonNull(onNavigateToLogin, "Login navigation callback must not be null");
         this.onNavigateToRegister = onNavigateToRegister;
         this.onOpenMyBookings = onOpenMyBookings;
+        this.onNavigateToAboutUs = onNavigateToAboutUs;
 
         initEventHandlers();
         loadHomeDataFromDatabase();
@@ -85,9 +88,22 @@ public class HomeController {
                           Consumer<VehicleType> onOpenVehicleCatalog,
                           SearchNavigator onSearchVehicleCatalog,
                           Runnable onNavigateToLogin,
+                          Runnable onNavigateToRegister,
+                          Runnable onOpenMyBookings) {
+        this(view, vehicleService, bookingService, authService, onOpenVehicleCatalog,
+             onSearchVehicleCatalog, onNavigateToLogin, onNavigateToRegister, onOpenMyBookings, null);
+    }
+
+    public HomeController(HomeView view,
+                          VehicleService vehicleService,
+                          BookingService bookingService,
+                          AuthenticationService authService,
+                          Consumer<VehicleType> onOpenVehicleCatalog,
+                          SearchNavigator onSearchVehicleCatalog,
+                          Runnable onNavigateToLogin,
                           Runnable onNavigateToRegister) {
         this(view, vehicleService, bookingService, authService, onOpenVehicleCatalog,
-             onSearchVehicleCatalog, onNavigateToLogin, onNavigateToRegister, null);
+             onSearchVehicleCatalog, onNavigateToLogin, onNavigateToRegister, null, null);
     }
 
     public HomeController(HomeView view,
@@ -98,7 +114,7 @@ public class HomeController {
                           SearchNavigator onSearchVehicleCatalog,
                           Runnable onNavigateToLogin) {
         this(view, vehicleService, bookingService, authService, onOpenVehicleCatalog,
-             onSearchVehicleCatalog, onNavigateToLogin, null, null);
+             onSearchVehicleCatalog, onNavigateToLogin, null, null, null);
     }
 
     public HomeController(HomeView view,
@@ -108,7 +124,7 @@ public class HomeController {
                           Consumer<VehicleType> onOpenVehicleCatalog,
                           Runnable onNavigateToLogin) {
         this(view, vehicleService, bookingService, authService, onOpenVehicleCatalog,
-             (type, pickup, returnDate, loc) -> onOpenVehicleCatalog.accept(type), onNavigateToLogin, null, null);
+             (type, pickup, returnDate, loc) -> onOpenVehicleCatalog.accept(type), onNavigateToLogin, null, null, null);
     }
 
     private void initEventHandlers() {
@@ -120,7 +136,13 @@ public class HomeController {
                 onOpenMyBookings.run();
             }
         });
-        view.getTopNavBar().setOnNavigateAboutUs(InfoDialogs::showAboutUsDialog);
+        if (onNavigateToAboutUs != null) {
+            view.getTopNavBar().setOnNavigateAboutUs(onNavigateToAboutUs);
+        } else if (com.ready2ride.desktop.view.TopNavBar.getDefaultOnNavigateAboutUs() != null) {
+            view.getTopNavBar().setOnNavigateAboutUs(com.ready2ride.desktop.view.TopNavBar.getDefaultOnNavigateAboutUs());
+        } else {
+            view.getTopNavBar().setOnNavigateAboutUs(InfoDialogs::showAboutUsDialog);
+        }
         view.getTopNavBar().setOnNavigateContact(InfoDialogs::showContactDialog);
         view.getTopNavBar().setOnSearch(() -> {
             view.getLocationComboBox().requestFocus();

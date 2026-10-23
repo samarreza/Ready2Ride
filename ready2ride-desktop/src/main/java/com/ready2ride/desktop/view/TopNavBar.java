@@ -58,6 +58,16 @@ public class TopNavBar extends HBox {
     private Runnable onRegister;
     private Runnable onLogout;
 
+    private static Runnable defaultOnNavigateAboutUs;
+
+    public static void setDefaultOnNavigateAboutUs(Runnable runnable) {
+        defaultOnNavigateAboutUs = runnable;
+    }
+
+    public static Runnable getDefaultOnNavigateAboutUs() {
+        return defaultOnNavigateAboutUs;
+    }
+
     public TopNavBar(NavPage initialPage) {
         this.currentPage = initialPage != null ? initialPage : NavPage.NONE;
 
@@ -78,7 +88,7 @@ public class TopNavBar extends HBox {
             }
         });
 
-        // 2. Center navigation pills container
+        // 2. Center navigation pills container (Contact removed per requirements)
         HBox centerNav = new HBox(6);
         centerNav.setAlignment(Pos.CENTER);
         centerNav.setBackground(UiTheme.roundedBackground(UiTheme.COLOR_BACKGROUND_LIGHT, 24));
@@ -90,7 +100,7 @@ public class TopNavBar extends HBox {
         navAboutBtn = createNavPill("About Us", UiTheme.ICON_INFO, currentPage == NavPage.ABOUT);
         navContactBtn = createNavPill("Contact", UiTheme.ICON_PHONE, currentPage == NavPage.CONTACT);
 
-        centerNav.getChildren().addAll(navHomeBtn, navVehiclesBtn, navMyBookingsBtn, navAboutBtn, navContactBtn);
+        centerNav.getChildren().addAll(navHomeBtn, navVehiclesBtn, navMyBookingsBtn, navAboutBtn);
 
         // 3. Right side action buttons
         navSearchBtn = new Button();
@@ -165,6 +175,8 @@ public class TopNavBar extends HBox {
         navAboutBtn.setOnAction(e -> {
             if (onNavigateAboutUs != null) {
                 onNavigateAboutUs.run();
+            } else if (defaultOnNavigateAboutUs != null) {
+                defaultOnNavigateAboutUs.run();
             } else {
                 InfoDialogs.showAboutUsDialog();
             }

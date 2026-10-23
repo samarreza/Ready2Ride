@@ -130,7 +130,13 @@ public class CustomerDashboardView {
         topNavBar.setOnNavigateHome(onNavigateToHome);
         topNavBar.setOnNavigateVehicles(onNavigateToCatalog);
         topNavBar.setOnNavigateMyBookings(this::refreshBookings);
-        topNavBar.setOnNavigateAboutUs(InfoDialogs::showAboutUsDialog);
+        topNavBar.setOnNavigateAboutUs(() -> {
+            if (TopNavBar.getDefaultOnNavigateAboutUs() != null) {
+                TopNavBar.getDefaultOnNavigateAboutUs().run();
+            } else {
+                InfoDialogs.showAboutUsDialog();
+            }
+        });
         topNavBar.setOnNavigateContact(InfoDialogs::showContactDialog);
         topNavBar.setOnLogout(this.onLogoutToLogin);
         topNavBar.setOnLogin(this.onLogoutToLogin);
@@ -1195,5 +1201,9 @@ public class CustomerDashboardView {
         if (v instanceof SUV) return "suv_dark.jpg";
         if (v instanceof Van) return "van_white.jpg";
         return "car_sedan.jpg";
+    }
+
+    public TopNavBar getTopNavBar() {
+        return topNavBar;
     }
 }

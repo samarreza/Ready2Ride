@@ -21,11 +21,13 @@ import com.ready2ride.core.service.VehicleService;
 import com.ready2ride.desktop.controller.DashboardController;
 import com.ready2ride.desktop.controller.HomeController;
 import com.ready2ride.desktop.controller.LoginController;
+import com.ready2ride.desktop.view.AboutUsView;
 import com.ready2ride.desktop.view.CustomerDashboardView;
 import com.ready2ride.desktop.view.DashboardView;
 import com.ready2ride.desktop.view.HomeView;
 import com.ready2ride.desktop.view.LoginView;
 import com.ready2ride.desktop.view.RegistrationView;
+import com.ready2ride.desktop.view.TopNavBar;
 import com.ready2ride.desktop.view.VehicleCatalogView;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -45,6 +47,7 @@ import java.util.logging.Logger;
  * - Payment & Confirmation Modal (matching Screenshot 5)
  * - Two-Column Login View (matching Screenshot 3)
  * - Customer Registration View
+ * - Dedicated About Us Page (Section 2)
  * - Customer Dashboard & My Bookings (Section 9)
  * - Administrator Console (Sections 10 to 16)
  */
@@ -53,6 +56,7 @@ public class Ready2RideApplication extends Application {
     private static final Logger LOGGER = Logger.getLogger(Ready2RideApplication.class.getName());
 
     public static final String APP_TITLE = "Ready2Ride — Vehicle Rental System";
+    public static final String ABOUT_US_TITLE = "Ready2Ride — About Us";
     public static final String CATALOG_TITLE = "Ready2Ride — Explore Our Vehicles";
     public static final String LOGIN_TITLE = "Ready2Ride — Sign In";
     public static final String REGISTER_TITLE = "Ready2Ride — Create an Account";
@@ -141,6 +145,9 @@ public class Ready2RideApplication extends Application {
         primaryStage.setMinWidth(1120);
         primaryStage.setMinHeight(740);
 
+        // Configure shared default navigation for About Us across all customer views
+        TopNavBar.setDefaultOnNavigateAboutUs(this::showAboutUsScene);
+
         showHomeScene();
         primaryStage.show();
     }
@@ -161,11 +168,30 @@ public class Ready2RideApplication extends Application {
                 this::showVehicleCatalogScene,
                 this::showLoginScene,
                 this::showRegisterScene,
-                () -> showCustomerDashboardScene(null)
+                () -> showCustomerDashboardScene(null),
+                this::showAboutUsScene
         );
 
         Scene homeScene = new Scene(homeView.getRootNode(), 1380, 880);
         primaryStage.setScene(homeScene);
+    }
+
+    /**
+     * Constructs and displays the dedicated About Us scene.
+     */
+    public void showAboutUsScene() {
+        primaryStage.setTitle(ABOUT_US_TITLE);
+
+        AboutUsView aboutUsView = new AboutUsView(
+                this::showHomeScene,
+                () -> showVehicleCatalogScene(null),
+                () -> showCustomerDashboardScene(null),
+                this::showLoginScene,
+                this::showRegisterScene
+        );
+
+        Scene aboutUsScene = new Scene(aboutUsView.getRootNode(), 1380, 880);
+        primaryStage.setScene(aboutUsScene);
     }
 
     /**
