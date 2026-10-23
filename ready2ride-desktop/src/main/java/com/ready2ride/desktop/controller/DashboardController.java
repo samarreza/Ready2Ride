@@ -93,8 +93,11 @@ public class DashboardController {
 
         // Logout Action (clears session and returns to login)
         view.getLogoutBtn().setOnAction(e -> {
+            view.clearCachedData();
             com.ready2ride.desktop.util.UserSession.getInstance().logout();
-            onLogout.run();
+            if (onLogout != null) {
+                onLogout.run();
+            }
         });
     }
 

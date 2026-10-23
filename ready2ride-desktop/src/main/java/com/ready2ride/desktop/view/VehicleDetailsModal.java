@@ -239,10 +239,10 @@ public class VehicleDetailsModal {
 
         HBox pRow = new HBox(6);
         pRow.setAlignment(Pos.BASELINE_LEFT);
-        Label rateLbl = new Label(String.format("₹ %,.0f", vehicle.getRentalRate().doubleValue()));
+        Label rateLbl = new Label(String.format("₹%,.0f", vehicle.getRentalRate().doubleValue()));
         rateLbl.setFont(Font.font(UiTheme.FONT_FAMILY, FontWeight.BOLD, 22));
         rateLbl.setTextFill(UiTheme.COLOR_PRIMARY);
-        Label perDay = new Label("/ day");
+        Label perDay = new Label(" / day");
         perDay.setFont(UiTheme.FONT_BODY);
         perDay.setTextFill(UiTheme.COLOR_TEXT_MUTED);
         pRow.getChildren().addAll(rateLbl, perDay);

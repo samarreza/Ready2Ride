@@ -1,16 +1,26 @@
 package com.ready2ride.core.database;
 
 import com.ready2ride.core.model.Bike;
+import com.ready2ride.core.model.Booking;
+import com.ready2ride.core.model.BookingStatus;
 import com.ready2ride.core.model.Car;
+import com.ready2ride.core.model.Payment;
+import com.ready2ride.core.model.PaymentMethod;
+import com.ready2ride.core.model.PaymentStatus;
 import com.ready2ride.core.model.SUV;
+import com.ready2ride.core.model.User;
 import com.ready2ride.core.model.Van;
 import com.ready2ride.core.model.Vehicle;
 import com.ready2ride.core.model.VehicleImage;
+import com.ready2ride.core.repository.BookingRepository;
+import com.ready2ride.core.repository.PaymentRepository;
+import com.ready2ride.core.repository.UserRepository;
 import com.ready2ride.core.repository.VehicleImageRepository;
 import com.ready2ride.core.repository.VehicleRepository;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -120,9 +130,31 @@ public class DemoDataInitializer {
                 userRepo.save(customer);
                 LOGGER.info("Seeded demo customer account: john.doe@ready2ride.com");
             }
+
+            if (!userRepo.existsByEmail("dhruv@example.com")) {
+                com.ready2ride.core.model.User dhruv = new com.ready2ride.core.model.User(
+                        "CUST-DHRUV-001",
+                        "Dhruv Taneja",
+                        "dhruv@example.com",
+                        "+91 98765 43210",
+                        com.ready2ride.core.util.PasswordHasher.hashPassword("Customer@123"),
+                        com.ready2ride.core.model.UserRole.CUSTOMER,
+                        "DL-2026-DHRUV"
+                );
+                userRepo.save(dhruv);
+                LOGGER.info("Seeded demo customer account: dhruv@example.com");
+            }
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Notice during demo users seeding: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Preserved for backward compatibility. Real customer reservations are strictly created
+     * through user actions in the application; demo/fake booking generation is disabled.
+     */
+    public synchronized void seedDemoBookingsIfAbsent(BookingRepository bookingRepo, UserRepository userRepo, PaymentRepository paymentRepo) {
+        // Disabled per Task 4: Do not fabricate fake customer reservations or payment transactions.
     }
 
     private void seedExtendedVehicles() {
@@ -145,6 +177,19 @@ public class DemoDataInitializer {
             Car car3 = new Car("CAR-EXT-103", "Maruti Suzuki", "Swift ZXi", "MH-12-RR-1003", BigDecimal.valueOf(1799.00), 5, "Petrol", 2);
             vehicleRepository.save(car3);
             seedImageIfAbsent("IMG-CAR-EXT-103", "CAR-EXT-103", "car_sedan.jpg", "image/jpeg");
+        }
+
+        if (vehicleRepository.existsById("CAR-DEV-101")) {
+            seedImageIfAbsent("IMG-CAR-DEV-101", "CAR-DEV-101", "car_sedan.jpg", "image/jpeg");
+        }
+        if (vehicleRepository.existsById("BIKE-DEV-201")) {
+            seedImageIfAbsent("IMG-BIKE-DEV-201", "BIKE-DEV-201", "bike_motorcycle.jpg", "image/jpeg");
+        }
+        if (vehicleRepository.existsById("SUV-DEV-301")) {
+            seedImageIfAbsent("IMG-SUV-DEV-301", "SUV-DEV-301", "suv_dark.jpg", "image/jpeg");
+        }
+        if (vehicleRepository.existsById("VAN-DEV-401")) {
+            seedImageIfAbsent("IMG-VAN-DEV-401", "VAN-DEV-401", "van_white.jpg", "image/jpeg");
         }
     }
 

@@ -12,6 +12,7 @@ import com.ready2ride.core.service.AuthenticationService;
 import com.ready2ride.core.service.BookingService;
 import com.ready2ride.core.service.VehicleService;
 import com.ready2ride.desktop.util.UiTheme;
+import com.ready2ride.desktop.view.CancellationConfirmationDialog;
 import com.ready2ride.desktop.view.HomeView;
 import com.ready2ride.desktop.view.InfoDialogs;
 import com.ready2ride.desktop.view.RegisterDialog;
@@ -47,6 +48,8 @@ public class HomeController {
     private final Runnable onNavigateToLogin;
     private final Runnable onNavigateToRegister;
 
+    private final Runnable onOpenMyBookings;
+
     @FunctionalInterface
     public interface SearchNavigator {
         void navigate(VehicleType type, LocalDate pickup, LocalDate returnDate, String location);
@@ -59,7 +62,8 @@ public class HomeController {
                           Consumer<VehicleType> onOpenVehicleCatalog,
                           SearchNavigator onSearchVehicleCatalog,
                           Runnable onNavigateToLogin,
-                          Runnable onNavigateToRegister) {
+                          Runnable onNavigateToRegister,
+                          Runnable onOpenMyBookings) {
         this.view = Objects.requireNonNull(view, "HomeView must not be null");
         this.vehicleService = Objects.requireNonNull(vehicleService, "VehicleService must not be null");
         this.bookingService = Objects.requireNonNull(bookingService, "BookingService must not be null");
@@ -68,6 +72,7 @@ public class HomeController {
         this.onSearchVehicleCatalog = onSearchVehicleCatalog;
         this.onNavigateToLogin = Objects.requireNonNull(onNavigateToLogin, "Login navigation callback must not be null");
         this.onNavigateToRegister = onNavigateToRegister;
+        this.onOpenMyBookings = onOpenMyBookings;
 
         initEventHandlers();
         loadHomeDataFromDatabase();
@@ -79,9 +84,21 @@ public class HomeController {
                           AuthenticationService authService,
                           Consumer<VehicleType> onOpenVehicleCatalog,
                           SearchNavigator onSearchVehicleCatalog,
+                          Runnable onNavigateToLogin,
+                          Runnable onNavigateToRegister) {
+        this(view, vehicleService, bookingService, authService, onOpenVehicleCatalog,
+             onSearchVehicleCatalog, onNavigateToLogin, onNavigateToRegister, null);
+    }
+
+    public HomeController(HomeView view,
+                          VehicleService vehicleService,
+                          BookingService bookingService,
+                          AuthenticationService authService,
+                          Consumer<VehicleType> onOpenVehicleCatalog,
+                          SearchNavigator onSearchVehicleCatalog,
                           Runnable onNavigateToLogin) {
         this(view, vehicleService, bookingService, authService, onOpenVehicleCatalog,
-             onSearchVehicleCatalog, onNavigateToLogin, null);
+             onSearchVehicleCatalog, onNavigateToLogin, null, null);
     }
 
     public HomeController(HomeView view,
@@ -91,36 +108,33 @@ public class HomeController {
                           Consumer<VehicleType> onOpenVehicleCatalog,
                           Runnable onNavigateToLogin) {
         this(view, vehicleService, bookingService, authService, onOpenVehicleCatalog,
-             (type, pickup, returnDate, loc) -> onOpenVehicleCatalog.accept(type), onNavigateToLogin, null);
+             (type, pickup, returnDate, loc) -> onOpenVehicleCatalog.accept(type), onNavigateToLogin, null, null);
     }
 
     private void initEventHandlers() {
-        // --- Navigation Header Handlers ---
-        view.getBrandLogoBox().setOnMouseClicked(e -> view.getScrollPane().setVvalue(0));
-        view.getNavHomeBtn().setOnAction(e -> view.getScrollPane().setVvalue(0));
-        view.getNavVehiclesBtn().setOnAction(e -> onOpenVehicleCatalog.accept(null));
-
-        view.getNavHowItWorksBtn().setOnAction(e -> {
-            // Scroll down directly to the How It Works section
-            view.getScrollPane().setVvalue(0.72);
+        // --- Navigation Header Handlers wired through shared TopNavBar ---
+        view.getTopNavBar().setOnNavigateHome(() -> view.getScrollPane().setVvalue(0));
+        view.getTopNavBar().setOnNavigateVehicles(() -> onOpenVehicleCatalog.accept(null));
+        view.getTopNavBar().setOnNavigateMyBookings(() -> {
+            if (onOpenMyBookings != null) {
+                onOpenMyBookings.run();
+            }
         });
-
-        view.getNavAboutBtn().setOnAction(e -> InfoDialogs.showAboutUs());
-        view.getNavContactBtn().setOnAction(e -> InfoDialogs.showContact());
-
-        view.getNavSearchBtn().setOnAction(e -> {
+        view.getTopNavBar().setOnNavigateAboutUs(InfoDialogs::showAboutUsDialog);
+        view.getTopNavBar().setOnNavigateContact(InfoDialogs::showContactDialog);
+        view.getTopNavBar().setOnSearch(() -> {
             view.getLocationComboBox().requestFocus();
             view.getScrollPane().setVvalue(0.12);
         });
-
-        view.getNavLoginBtn().setOnAction(e -> onNavigateToLogin.run());
-        view.getNavRegisterBtn().setOnAction(e -> {
+        view.getTopNavBar().setOnLogin(onNavigateToLogin);
+        view.getTopNavBar().setOnRegister(() -> {
             if (onNavigateToRegister != null) {
                 onNavigateToRegister.run();
             } else if (authService != null) {
                 RegisterDialog.show(authService);
             }
         });
+        view.getTopNavBar().setOnLogout(onNavigateToLogin);
 
         // --- Booking Panel Tab Switching ---
         view.getTabRentVehicleBtn().setOnAction(e -> switchTab(true));
@@ -271,24 +285,41 @@ public class HomeController {
     }
 
     private void handleCancelBooking(Booking booking) {
-        javafx.scene.control.Alert confirm = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Cancel Reservation");
-        confirm.setHeaderText("Cancel Booking " + booking.getBookingId() + "?");
-        confirm.setContentText("Are you sure you want to cancel this reservation for " +
-                booking.getPickupDateTime().toLocalDate() + " to " + booking.getReturnDateTime().toLocalDate() +
-                "? The vehicle will immediately become available for other customers.");
+        Vehicle vehicle = null;
+        try {
+            vehicle = vehicleService.getVehicleById(booking.getVehicleId());
+        } catch (Exception ignored) {
+        }
+        javafx.stage.Window window = (view.getRootNode() != null && view.getRootNode().getScene() != null)
+                ? view.getRootNode().getScene().getWindow() : null;
 
-        Optional<javafx.scene.control.ButtonType> result = confirm.showAndWait();
-        if (result.isPresent() && result.get() == javafx.scene.control.ButtonType.OK) {
+        boolean confirmed = CancellationConfirmationDialog.show(window, booking, vehicle);
+        if (confirmed) {
             try {
                 Booking cancelled = bookingService.cancelBooking(booking.getBookingId());
                 view.getBookingLookupResultLabel().setText("✓ Reservation " + cancelled.getBookingId() + " successfully cancelled. Status: CANCELLED.");
                 view.getBookingLookupResultLabel().setTextFill(UiTheme.COLOR_WARNING);
                 view.getBookingCancelBtn().setVisible(false);
                 view.getBookingCancelBtn().setManaged(false);
+
+                CancellationConfirmationDialog.showNotification(
+                        window,
+                        "Booking Cancelled",
+                        "Reservation Successfully Cancelled",
+                        "Booking " + booking.getBookingId() + " has been updated to CANCELLED in PostgreSQL. The vehicle is now available for other customers.",
+                        true
+                );
             } catch (Exception ex) {
                 view.getBookingLookupResultLabel().setText("Failed to cancel reservation: " + ex.getMessage());
                 view.getBookingLookupResultLabel().setTextFill(UiTheme.COLOR_ERROR);
+
+                CancellationConfirmationDialog.showNotification(
+                        window,
+                        "Cancellation Error",
+                        "Unable to Cancel Reservation",
+                        ex.getMessage(),
+                        false
+                );
             }
         }
     }
@@ -304,7 +335,7 @@ public class HomeController {
 
                 for (VehicleType type : VehicleType.values()) {
                     List<Vehicle> typeVehicles = allVehicles.stream()
-                            .filter(v -> v.getVehicleType() == type)
+                            .filter(v -> v.getVehicleType() == type && v.isActive())
                             .toList();
 
                     if (!typeVehicles.isEmpty()) {

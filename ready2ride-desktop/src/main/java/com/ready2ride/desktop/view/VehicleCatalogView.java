@@ -67,6 +67,7 @@ import java.util.stream.Collectors;
 public class VehicleCatalogView {
 
     private final BorderPane rootPane;
+    private final TopNavBar topNavBar;
     private final VehicleService vehicleService;
     private final BookingService bookingService;
     private final PaymentService paymentService;
@@ -145,8 +146,20 @@ public class VehicleCatalogView {
             }
         }
 
-        // 1. Top Navigation Bar (Header)
-        HBox header = buildHeader();
+        // 1. Shared Top Navigation Bar (matching Home page 100%)
+        topNavBar = new TopNavBar(TopNavBar.NavPage.VEHICLES);
+        topNavBar.setOnNavigateHome(onBackToHome);
+        topNavBar.setOnNavigateVehicles(() -> {
+            searchField.clear();
+            applyFilters();
+        });
+        topNavBar.setOnNavigateMyBookings(onOpenMyBookings);
+        topNavBar.setOnNavigateAboutUs(InfoDialogs::showAboutUsDialog);
+        topNavBar.setOnNavigateContact(InfoDialogs::showContactDialog);
+        topNavBar.setOnSearch(searchField::requestFocus);
+        topNavBar.setOnLogin(onOpenLogin);
+        topNavBar.setOnRegister(onOpenRegister);
+        topNavBar.setOnLogout(onOpenLogin);
 
         // 2. Main Scrollable Container (Hero + Body)
         VBox scrollContent = new VBox(0);
@@ -164,10 +177,14 @@ public class VehicleCatalogView {
         mainScroll.setBackground(UiTheme.fillBackground(UiTheme.COLOR_BACKGROUND_LIGHT));
         mainScroll.setBorder(Border.EMPTY);
 
-        rootPane.setTop(header);
+        rootPane.setTop(topNavBar);
         rootPane.setCenter(mainScroll);
 
         loadInitialData();
+    }
+
+    public TopNavBar getTopNavBar() {
+        return topNavBar;
     }
 
     public VehicleCatalogView(VehicleService vehicleService, BookingService bookingService,
@@ -176,136 +193,21 @@ public class VehicleCatalogView {
         this(vehicleService, bookingService, null, null, onBackToHome, null, null, null, initialFilter, searchPickup, searchReturn, searchLocation);
     }
 
-    private HBox buildHeader() {
-        HBox bar = new HBox(16);
-        bar.setPrefHeight(72);
-        bar.setAlignment(Pos.CENTER_LEFT);
-        bar.setPadding(new Insets(10, 48, 10, 48));
-        bar.setBackground(UiTheme.fillBackground(UiTheme.COLOR_WHITE));
-        bar.setBorder(UiTheme.strokeBorder(UiTheme.COLOR_BORDER_LIGHT, 0, 1));
-        bar.setEffect(UiTheme.subtleShadow());
-
-        // Brand Logo
-        HBox brand = new HBox(10);
-        brand.setAlignment(Pos.CENTER_LEFT);
-        brand.setCursor(Cursor.HAND);
-        brand.setOnMouseClicked(e -> {
-            if (onBackToHome != null) onBackToHome.run();
-        });
-
-        brand.getChildren().addAll(
-                UiTheme.createBrandLogo(36),
-                new VBox(1,
-                        new Label("Ready2Ride") {{
-                            setFont(Font.font(UiTheme.FONT_FAMILY, FontWeight.BOLD, 18));
-                            setTextFill(UiTheme.COLOR_NAVY_DARK);
-                        }},
-                        new Label("RENT • RIDE • EXPLORE") {{
-                            setFont(Font.font(UiTheme.FONT_FAMILY, FontWeight.SEMI_BOLD, 8));
-                            setTextFill(UiTheme.COLOR_TEXT_MUTED);
-                        }}
-                )
-        );
-
-        Region spacer1 = new Region();
-        HBox.setHgrow(spacer1, Priority.ALWAYS);
-
-        // Nav Links: Home, Vehicles [Active Pill], About Us, Why Choose Us, Contact
-        Button homeNav = UiTheme.createGhostButton("Home");
-        homeNav.setOnAction(e -> {
-            if (onBackToHome != null) onBackToHome.run();
-        });
-
-        Button vehiclesNav = new Button("Vehicles");
-        vehiclesNav.setFont(UiTheme.FONT_BODY_BOLD);
-        vehiclesNav.setTextFill(UiTheme.COLOR_WHITE);
-        vehiclesNav.setBackground(UiTheme.roundedBackground(UiTheme.COLOR_PRIMARY, 8));
-        vehiclesNav.setBorder(Border.EMPTY);
-        vehiclesNav.setPadding(new Insets(8, 18, 8, 18));
-        vehiclesNav.setCursor(Cursor.HAND);
-
-        Button aboutNav = UiTheme.createGhostButton("About Us");
-        aboutNav.setOnAction(e -> InfoDialogs.showAboutUsDialog());
-
-        Button whyNav = UiTheme.createGhostButton("Why Choose Us");
-        whyNav.setOnAction(e -> InfoDialogs.showWhyChooseUsDialog());
-
-        Button contactNav = UiTheme.createGhostButton("Contact");
-        contactNav.setOnAction(e -> InfoDialogs.showContactDialog());
-
-        HBox navItems = new HBox(8, homeNav, vehiclesNav, aboutNav, whyNav, contactNav);
-        navItems.setAlignment(Pos.CENTER_LEFT);
-
-        Region spacer2 = new Region();
-        HBox.setHgrow(spacer2, Priority.ALWAYS);
-
-        // Auth Buttons or Profile Chip
-        HBox authBox = new HBox(10);
-        authBox.setAlignment(Pos.CENTER_RIGHT);
-
-        if (UserSession.getInstance().isLoggedIn()) {
-            HBox userChip = new HBox(8);
-            userChip.setAlignment(Pos.CENTER_LEFT);
-            userChip.setBackground(UiTheme.roundedBackground(UiTheme.COLOR_PRIMARY_LIGHT, 16));
-            userChip.setPadding(new Insets(6, 12, 6, 8));
-            userChip.setCursor(Cursor.HAND);
-
-            Circle circle = new Circle(12, UiTheme.COLOR_PRIMARY);
-            Label name = new Label(UserSession.getInstance().getDisplayName());
-            name.setFont(UiTheme.FONT_BODY_BOLD);
-            name.setTextFill(UiTheme.COLOR_PRIMARY);
-
-            userChip.getChildren().addAll(circle, name);
-            userChip.setOnMouseClicked(e -> {
-                if (onOpenMyBookings != null) onOpenMyBookings.run();
-            });
-
-            Button logoutBtn = UiTheme.createGhostButton("Logout");
-            logoutBtn.setOnAction(e -> {
-                UserSession.getInstance().logout();
-                if (onBackToHome != null) onBackToHome.run();
-            });
-
-            authBox.getChildren().addAll(userChip, logoutBtn);
-        } else {
-            Button loginBtn = new Button("👤  Login");
-            loginBtn.setFont(UiTheme.FONT_BODY_BOLD);
-            loginBtn.setTextFill(UiTheme.COLOR_PRIMARY);
-            loginBtn.setBackground(UiTheme.roundedBackground(UiTheme.COLOR_WHITE, 8));
-            loginBtn.setBorder(UiTheme.strokeBorder(UiTheme.COLOR_PRIMARY_BORDER, 8, 1));
-            loginBtn.setPadding(new Insets(7, 16, 7, 16));
-            loginBtn.setCursor(Cursor.HAND);
-            loginBtn.setOnAction(e -> {
-                if (onOpenLogin != null) onOpenLogin.run();
-            });
-
-            Button regBtn = new Button("+ Register");
-            regBtn.setFont(UiTheme.FONT_BODY_BOLD);
-            regBtn.setTextFill(UiTheme.COLOR_WHITE);
-            regBtn.setBackground(UiTheme.roundedBackground(UiTheme.COLOR_PRIMARY, 8));
-            regBtn.setBorder(Border.EMPTY);
-            regBtn.setPadding(new Insets(8, 18, 8, 18));
-            regBtn.setCursor(Cursor.HAND);
-            regBtn.setOnAction(e -> {
-                if (onOpenRegister != null) onOpenRegister.run();
-            });
-
-            authBox.getChildren().addAll(loginBtn, regBtn);
-        }
-
-        bar.getChildren().addAll(brand, spacer1, navItems, spacer2, authBox);
-        return bar;
-    }
-
     private StackPane buildHeroSection() {
         StackPane hero = new StackPane();
-        hero.setPrefHeight(180);
-        hero.setMaxHeight(180);
+        hero.setMinHeight(105);
+        hero.setPrefHeight(115);
+        hero.setMaxHeight(120);
+
+        // Clip hero boundary so image never leaks vertically
+        Rectangle clip = new Rectangle();
+        clip.widthProperty().bind(hero.widthProperty());
+        clip.heightProperty().bind(hero.heightProperty());
+        hero.setClip(clip);
 
         ImageView iv = new ImageView();
-        iv.setPreserveRatio(false);
+        iv.setPreserveRatio(true);
         iv.fitWidthProperty().bind(hero.widthProperty());
-        iv.fitHeightProperty().bind(hero.heightProperty());
 
         try (InputStream in = getClass().getResourceAsStream("/images/hero_sunset.jpg")) {
             if (in != null) {
@@ -317,21 +219,23 @@ public class VehicleCatalogView {
         Rectangle darkMask = new Rectangle();
         darkMask.widthProperty().bind(hero.widthProperty());
         darkMask.heightProperty().bind(hero.heightProperty());
-        darkMask.setFill(Color.rgb(10, 18, 40, 0.70));
+        darkMask.setFill(Color.rgb(10, 18, 40, 0.65));
 
-        VBox textBox = new VBox(6);
+        VBox textBox = new VBox(4);
         textBox.setAlignment(Pos.CENTER_LEFT);
-        textBox.setPadding(new Insets(30, 48, 30, 48));
+        textBox.setPadding(new Insets(16, 48, 16, 48));
 
         Label title = new Label("Explore Our Vehicles");
-        title.setFont(Font.font(UiTheme.FONT_FAMILY, FontWeight.BOLD, 36));
+        title.setFont(Font.font(UiTheme.FONT_FAMILY, FontWeight.BOLD, 28));
         title.setTextFill(UiTheme.COLOR_WHITE);
 
         Label sub = new Label("A wide range of well-maintained vehicles for every journey.");
-        sub.setFont(Font.font(UiTheme.FONT_FAMILY, FontWeight.NORMAL, 15));
+        sub.setFont(Font.font(UiTheme.FONT_FAMILY, FontWeight.NORMAL, 13));
         sub.setTextFill(Color.web("#E2E8F0"));
 
         textBox.getChildren().addAll(title, sub);
+
+        StackPane.setAlignment(textBox, Pos.CENTER_LEFT);
         hero.getChildren().addAll(iv, darkMask, textBox);
         return hero;
     }
@@ -773,10 +677,10 @@ public class VehicleCatalogView {
         // Price
         HBox priceRow = new HBox(4);
         priceRow.setAlignment(Pos.BASELINE_LEFT);
-        Label priceVal = new Label(String.format("₹ %,.0f", v.getRentalRate().doubleValue()));
+        Label priceVal = new Label(String.format("₹%,.0f", v.getRentalRate().doubleValue()));
         priceVal.setFont(Font.font(UiTheme.FONT_FAMILY, FontWeight.BOLD, 16));
         priceVal.setTextFill(UiTheme.COLOR_NAVY_DARK);
-        Label dayLbl = new Label("/ day");
+        Label dayLbl = new Label(" / day");
         dayLbl.setFont(UiTheme.FONT_CAPTION);
         dayLbl.setTextFill(UiTheme.COLOR_TEXT_MUTED);
         priceRow.getChildren().addAll(priceVal, dayLbl);

@@ -72,6 +72,23 @@ public class InfoDialogs {
         showWhyChooseUs();
     }
 
+    public static void showHowItWorksDialog() {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("How It Works — Ready2Ride");
+        alert.setHeaderText("Rent Your Vehicle in 4 Simple Steps");
+
+        VBox box = new VBox(10);
+        box.setPadding(new Insets(10));
+        Label l1 = new Label("1. Choose Vehicle: Browse our wide range of cars, bikes, SUVs, and vans.");
+        Label l2 = new Label("2. Pick Date & Location: Select your travel dates and convenient pickup hub.");
+        Label l3 = new Label("3. Quick Booking & Payment: Confirm reservation with secure payment options.");
+        Label l4 = new Label("4. Ride & Enjoy: Pick up your sanitized vehicle and start your journey!");
+        box.getChildren().addAll(l1, l2, l3, l4);
+
+        alert.getDialogPane().setContent(box);
+        alert.showAndWait();
+    }
+
     public static void showContactDialog() {
         showContact();
     }

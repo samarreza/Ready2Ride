@@ -108,6 +108,10 @@ public class VehicleService {
         return imageRepository.findPrimaryByVehicleId(vehicleId);
     }
 
+    public java.util.Optional<com.ready2ride.core.model.VehicleImage> getPrimaryVehicleImage(String vehicleId) {
+        return getPrimaryImage(vehicleId);
+    }
+
     /**
      * Retrieves all images associated with a vehicle.
      *

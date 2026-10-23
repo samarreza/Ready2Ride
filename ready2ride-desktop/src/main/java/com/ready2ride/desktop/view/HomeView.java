@@ -59,7 +59,8 @@ public class HomeView {
     private final BorderPane rootPane;
     private final ScrollPane scrollPane;
 
-    // Header buttons
+    // Shared Top Navigation Bar
+    private final TopNavBar topNavBar;
     private final HBox brandLogoBox;
     private final Button navHomeBtn;
     private final Button navVehiclesBtn;
@@ -100,80 +101,20 @@ public class HomeView {
         rootPane.setBackground(UiTheme.fillBackground(UiTheme.COLOR_BACKGROUND_LIGHT));
 
         // =====================================================================
-        // SECTION A: Navigation Header
+        // SECTION A: Shared Top Navigation Header
         // =====================================================================
-        HBox header = new HBox(16);
-        header.setPrefHeight(72);
-        header.setAlignment(Pos.CENTER_LEFT);
-        header.setPadding(new Insets(10, 36, 10, 36));
-        header.setBackground(UiTheme.fillBackground(UiTheme.COLOR_WHITE));
-        header.setBorder(UiTheme.strokeBorder(UiTheme.COLOR_BORDER_LIGHT, 0, 1));
-        header.setEffect(UiTheme.subtleShadow());
+        topNavBar = new TopNavBar(TopNavBar.NavPage.HOME);
+        brandLogoBox = topNavBar.getBrandLogoBox();
+        navHomeBtn = topNavBar.getNavHomeBtn();
+        navVehiclesBtn = topNavBar.getNavVehiclesBtn();
+        navHowItWorksBtn = topNavBar.getNavHowItWorksBtn();
+        navAboutBtn = topNavBar.getNavAboutBtn();
+        navContactBtn = topNavBar.getNavContactBtn();
+        navSearchBtn = topNavBar.getNavSearchBtn();
+        navLoginBtn = topNavBar.getNavLoginBtn();
+        navRegisterBtn = topNavBar.getNavRegisterBtn();
 
-        // Left brand logo
-        brandLogoBox = UiTheme.createBrandHeaderLogo();
-
-        // Center navigation pills container
-        HBox centerNav = new HBox(6);
-        centerNav.setAlignment(Pos.CENTER);
-        centerNav.setBackground(UiTheme.roundedBackground(UiTheme.COLOR_BACKGROUND_LIGHT, 24));
-        centerNav.setPadding(new Insets(4, 6, 4, 6));
-
-        navHomeBtn = createHeaderNavPill("Home", UiTheme.ICON_HOME, true);
-        navVehiclesBtn = createHeaderNavPill("Vehicles", UiTheme.ICON_CAR, false);
-        navHowItWorksBtn = createHeaderNavPill("How It Works", UiTheme.ICON_HOW_IT_WORKS, false);
-        navAboutBtn = createHeaderNavPill("About Us", UiTheme.ICON_INFO, false);
-        navContactBtn = createHeaderNavPill("Contact", UiTheme.ICON_PHONE, false);
-
-        centerNav.getChildren().addAll(navHomeBtn, navVehiclesBtn, navHowItWorksBtn, navAboutBtn, navContactBtn);
-
-        // Right side action buttons
-        navSearchBtn = new Button();
-        navSearchBtn.setGraphic(UiTheme.createSvgIcon(UiTheme.ICON_SEARCH, 18, UiTheme.COLOR_TEXT_DARK));
-        navSearchBtn.setBackground(UiTheme.roundedBackground(Color.TRANSPARENT, 20));
-        navSearchBtn.setPadding(new Insets(8));
-        navSearchBtn.setCursor(Cursor.HAND);
-        navSearchBtn.setOnMouseEntered(e -> navSearchBtn.setBackground(UiTheme.roundedBackground(UiTheme.COLOR_PRIMARY_LIGHT, 20)));
-        navSearchBtn.setOnMouseExited(e -> navSearchBtn.setBackground(UiTheme.roundedBackground(Color.TRANSPARENT, 20)));
-
-        navLoginBtn = new Button("Login");
-        navLoginBtn.setGraphic(UiTheme.createSvgIcon(UiTheme.ICON_USER, 16, UiTheme.COLOR_PRIMARY));
-        navLoginBtn.setFont(UiTheme.FONT_BODY_BOLD);
-        navLoginBtn.setTextFill(UiTheme.COLOR_PRIMARY);
-        navLoginBtn.setBackground(UiTheme.roundedBackground(UiTheme.COLOR_WHITE, 8));
-        navLoginBtn.setBorder(UiTheme.strokeBorder(UiTheme.COLOR_PRIMARY_BORDER, 8, 1.5));
-        navLoginBtn.setPadding(new Insets(8, 20, 8, 16));
-        navLoginBtn.setCursor(Cursor.HAND);
-        navLoginBtn.setOnMouseEntered(e -> {
-            navLoginBtn.setBackground(UiTheme.roundedBackground(UiTheme.COLOR_PRIMARY_LIGHT, 8));
-            navLoginBtn.setBorder(UiTheme.strokeBorder(UiTheme.COLOR_PRIMARY, 8, 1.5));
-        });
-        navLoginBtn.setOnMouseExited(e -> {
-            navLoginBtn.setBackground(UiTheme.roundedBackground(UiTheme.COLOR_WHITE, 8));
-            navLoginBtn.setBorder(UiTheme.strokeBorder(UiTheme.COLOR_PRIMARY_BORDER, 8, 1.5));
-        });
-
-        navRegisterBtn = new Button("Register");
-        navRegisterBtn.setGraphic(UiTheme.createSvgIcon(UiTheme.ICON_USER_PLUS, 16, UiTheme.COLOR_WHITE));
-        navRegisterBtn.setFont(UiTheme.FONT_BODY_BOLD);
-        navRegisterBtn.setTextFill(UiTheme.COLOR_WHITE);
-        navRegisterBtn.setBackground(UiTheme.roundedBackground(UiTheme.COLOR_PRIMARY, 8));
-        navRegisterBtn.setBorder(Border.EMPTY);
-        navRegisterBtn.setPadding(new Insets(9, 22, 9, 18));
-        navRegisterBtn.setCursor(Cursor.HAND);
-        navRegisterBtn.setOnMouseEntered(e -> navRegisterBtn.setBackground(UiTheme.roundedBackground(UiTheme.COLOR_PRIMARY_HOVER, 8)));
-        navRegisterBtn.setOnMouseExited(e -> navRegisterBtn.setBackground(UiTheme.roundedBackground(UiTheme.COLOR_PRIMARY, 8)));
-
-        Region spacer1 = new Region();
-        Region spacer2 = new Region();
-        HBox.setHgrow(spacer1, Priority.ALWAYS);
-        HBox.setHgrow(spacer2, Priority.ALWAYS);
-
-        HBox rightActions = new HBox(12, navSearchBtn, navLoginBtn, navRegisterBtn);
-        rightActions.setAlignment(Pos.CENTER_RIGHT);
-
-        header.getChildren().addAll(brandLogoBox, spacer1, centerNav, spacer2, rightActions);
-        rootPane.setTop(header);
+        rootPane.setTop(topNavBar);
 
         // =====================================================================
         // SECTION B: Hero, Booking Panel, and Benefits Strip
@@ -775,7 +716,7 @@ public class HomeView {
             cardPane.setMinWidth(240);
 
             // 1. Top Price Badge (Right aligned)
-            priceBadgeLabel = new Label("From ₹ " + initialPrice + " / day");
+            priceBadgeLabel = new Label("From ₹" + initialPrice + " / day");
             priceBadgeLabel.setFont(UiTheme.FONT_PRICE_BADGE);
             priceBadgeLabel.setTextFill(UiTheme.COLOR_PRIMARY);
             priceBadgeLabel.setBackground(UiTheme.roundedBackground(UiTheme.COLOR_PRIMARY_LIGHT, 8));
@@ -875,7 +816,7 @@ public class HomeView {
 
         public void setPrice(BigDecimal rate) {
             if (rate != null) {
-                priceBadgeLabel.setText(String.format("From ₹ %,.0f / day", rate.doubleValue()));
+                priceBadgeLabel.setText(String.format("From ₹%,.0f / day", rate.doubleValue()));
             }
         }
 
@@ -923,6 +864,10 @@ public class HomeView {
 
     public ScrollPane getScrollPane() {
         return scrollPane;
+    }
+
+    public TopNavBar getTopNavBar() {
+        return topNavBar;
     }
 
     public HBox getBrandLogoBox() {

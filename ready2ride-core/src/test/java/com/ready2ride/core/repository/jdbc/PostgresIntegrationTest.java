@@ -22,6 +22,7 @@ import com.ready2ride.core.model.Van;
 import com.ready2ride.core.model.Vehicle;
 import com.ready2ride.core.service.AuthenticationService;
 import com.ready2ride.core.util.PasswordHasher;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -138,9 +139,11 @@ class PostgresIntegrationTest {
      */
     private static void cleanupPreviousTestData() {
         String[] cleanupStatements = {
-            "DELETE FROM payments WHERE id LIKE 'IT-%'",
-            "DELETE FROM bookings WHERE id LIKE 'IT-%'",
-            "DELETE FROM maintenance WHERE id LIKE 'IT-%'",
+            "DELETE FROM payments WHERE booking_id IN (SELECT id FROM bookings WHERE vehicle_id LIKE 'IT-%') OR id LIKE 'IT-%'",
+            "DELETE FROM user_favorites WHERE vehicle_id LIKE 'IT-%'",
+            "DELETE FROM vehicle_images WHERE vehicle_id LIKE 'IT-%'",
+            "DELETE FROM maintenance WHERE vehicle_id LIKE 'IT-%' OR id LIKE 'IT-%'",
+            "DELETE FROM bookings WHERE vehicle_id LIKE 'IT-%' OR id LIKE 'IT-%'",
             "DELETE FROM vehicles WHERE id LIKE 'IT-%'",
             "DELETE FROM users WHERE id LIKE 'IT-%' OR id LIKE 'CUST-IT-%'"
         };
@@ -152,6 +155,13 @@ class PostgresIntegrationTest {
             }
         } catch (SQLException e) {
             System.err.println("[PostgresIntegrationTest] Warning: test data cleanup failed: " + e.getMessage());
+        }
+    }
+
+    @AfterAll
+    static void tearDownAll() {
+        if (databaseAvailable && connectionManager != null) {
+            cleanupPreviousTestData();
         }
     }
 

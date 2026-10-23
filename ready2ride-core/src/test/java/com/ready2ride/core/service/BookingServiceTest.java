@@ -197,4 +197,29 @@ class BookingServiceTest {
         assertEquals("BKG-NEW", newBooking.getBookingId());
         assertEquals(BookingStatus.CONFIRMED, newBooking.getStatus());
     }
+
+    @Test
+    @DisplayName("Customer ownership check should prevent unauthorized access and cancellation")
+    void testCustomerOwnershipEnforcement() {
+        Booking booking = bookingService.createBooking("BKG-OWNED", "CUST-ALICE", "CAR-1",
+                START_DATE.plusDays(10), END_DATE_2DAYS.plusDays(10));
+        assertEquals("CUST-ALICE", booking.getCustomerId());
+
+        // Alice can access her own booking
+        Booking retrieved = bookingService.getBookingForCustomer("BKG-OWNED", "CUST-ALICE");
+        assertNotNull(retrieved);
+
+        // Bob cannot access Alice's booking
+        assertThrows(SecurityException.class, () ->
+                bookingService.getBookingForCustomer("BKG-OWNED", "CUST-BOB"));
+
+        // Bob cannot cancel Alice's booking
+        assertThrows(SecurityException.class, () ->
+                bookingService.cancelBookingForCustomer("BKG-OWNED", "CUST-BOB"));
+
+        // Alice can successfully cancel her own booking
+        Booking cancelled = bookingService.cancelBookingForCustomer("BKG-OWNED", "CUST-ALICE");
+        assertEquals(BookingStatus.CANCELLED, cancelled.getStatus());
+    }
 }
+

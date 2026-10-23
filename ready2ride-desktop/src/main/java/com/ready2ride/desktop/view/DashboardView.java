@@ -115,12 +115,12 @@ public class DashboardView {
         rootPane = new BorderPane();
         rootPane.setBackground(UiTheme.fillBackground(UiTheme.COLOR_BACKGROUND_LIGHT));
 
-        // --- 1. Left Sidebar Navigation ---
-        VBox sidebar = new VBox(12);
+        // --- 1. Left Sidebar Navigation (Docked BorderPane) ---
+        BorderPane sidebar = new BorderPane();
         sidebar.setPrefWidth(240);
         sidebar.setMinWidth(220);
         sidebar.setBackground(UiTheme.fillBackground(UiTheme.COLOR_NAVY_DARK));
-        sidebar.setPadding(new Insets(24, 16, 24, 16));
+        sidebar.setPadding(new Insets(24, 16, 20, 16));
 
         // Sidebar Brand Header
         StackPane logo = UiTheme.createBrandLogo(36);
@@ -157,23 +157,45 @@ public class DashboardView {
                 navProfileBtn
         );
 
-        // Sidebar Bottom / Logout
-        Region sidebarSpacer = new Region();
-        VBox.setVgrow(sidebarSpacer, Priority.ALWAYS);
+        ScrollPane menuScroll = new ScrollPane(navMenu);
+        menuScroll.setFitToWidth(true);
+        menuScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        menuScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        menuScroll.setBackground(UiTheme.fillBackground(Color.TRANSPARENT));
+        menuScroll.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
 
-        logoutBtn = new Button("🚪  Logout");
+        // Sidebar Bottom / Pinned Logout
+        VBox bottomBox = new VBox(10);
+        bottomBox.setPadding(new Insets(16, 0, 0, 0));
+        bottomBox.setBorder(UiTheme.topBorder(Color.rgb(255, 255, 255, 0.12), 1));
+
+        logoutBtn = new Button("  Logout");
+        logoutBtn.setGraphic(UiTheme.createSvgIcon(UiTheme.ICON_LOGOUT, 16, Color.web("#F87171")));
         logoutBtn.setFont(UiTheme.FONT_BODY_BOLD);
         logoutBtn.setTextFill(Color.web("#F87171"));
         logoutBtn.setBackground(UiTheme.roundedBackground(UiTheme.COLOR_NAVY_PANEL, 8));
         logoutBtn.setBorder(UiTheme.strokeBorder(Color.web("#7F1D1D"), 8, 1));
         logoutBtn.setMaxWidth(Double.MAX_VALUE);
-        logoutBtn.setPrefHeight(38);
+        logoutBtn.setPrefHeight(40);
         logoutBtn.setCursor(Cursor.HAND);
+        logoutBtn.setAlignment(Pos.CENTER);
 
-        logoutBtn.setOnMouseEntered(e -> logoutBtn.setBackground(UiTheme.roundedBackground(Color.web("#7F1D1D"), 8)));
-        logoutBtn.setOnMouseExited(e -> logoutBtn.setBackground(UiTheme.roundedBackground(UiTheme.COLOR_NAVY_PANEL, 8)));
+        logoutBtn.setOnMouseEntered(e -> {
+            logoutBtn.setBackground(UiTheme.roundedBackground(Color.web("#7F1D1D"), 8));
+            logoutBtn.setTextFill(Color.web("#FFFFFF"));
+            logoutBtn.setGraphic(UiTheme.createSvgIcon(UiTheme.ICON_LOGOUT, 16, Color.web("#FFFFFF")));
+        });
+        logoutBtn.setOnMouseExited(e -> {
+            logoutBtn.setBackground(UiTheme.roundedBackground(UiTheme.COLOR_NAVY_PANEL, 8));
+            logoutBtn.setTextFill(Color.web("#F87171"));
+            logoutBtn.setGraphic(UiTheme.createSvgIcon(UiTheme.ICON_LOGOUT, 16, Color.web("#F87171")));
+        });
 
-        sidebar.getChildren().addAll(brandHeader, navMenu, sidebarSpacer, logoutBtn);
+        bottomBox.getChildren().add(logoutBtn);
+
+        sidebar.setTop(brandHeader);
+        sidebar.setCenter(menuScroll);
+        sidebar.setBottom(bottomBox);
         rootPane.setLeft(sidebar);
 
         // --- 2. Top Header Bar ---
@@ -981,6 +1003,13 @@ public class DashboardView {
 
     public Button getNavMaintenanceBtn() {
         return navMaintenanceBtn;
+    }
+
+    public void clearCachedData() {
+        if (bookingsTable != null) {
+            bookingsTable.getItems().clear();
+        }
+        contentContainer.getChildren().clear();
     }
 
     public void restoreDashboardContent() {

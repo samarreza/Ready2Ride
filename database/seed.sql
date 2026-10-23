@@ -19,40 +19,31 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- 2. Insert Sample Fleet Vehicles Across All Subclasses (Car, Bike, SUV, Van)
--- A. Standard Car (Charged per started 24-hr period @ 55.00/day)
+-- A. Standard Car (Charged per started 24-hr period @ 2499.00/day)
 INSERT INTO vehicles (id, vehicle_type, brand, model, registration_number, rental_rate, is_active, seating_capacity, fuel_type)
-VALUES ('CAR-DEV-101', 'CAR', 'Honda', 'City', 'MH-12-DE-1001', 55.00, TRUE, 5, 'Petrol')
-ON CONFLICT (id) DO NOTHING;
+VALUES ('CAR-DEV-101', 'CAR', 'Honda', 'City', 'MH-12-DE-1001', 2499.00, TRUE, 5, 'Petrol')
+ON CONFLICT (id) DO UPDATE SET rental_rate = EXCLUDED.rental_rate;
 
--- B. Two-Wheeler Bike (Charged per started hour @ 15.00/hr)
+-- B. Two-Wheeler Bike (Charged per started 24-hr period @ 899.00/day)
 INSERT INTO vehicles (id, vehicle_type, brand, model, registration_number, rental_rate, is_active, engine_capacity_cc)
-VALUES ('BIKE-DEV-201', 'BIKE', 'Royal Enfield', 'Hunter 350', 'MH-12-DE-2002', 15.00, TRUE, 349)
-ON CONFLICT (id) DO NOTHING;
+VALUES ('BIKE-DEV-201', 'BIKE', 'Royal Enfield', 'Hunter 350', 'MH-12-DE-2002', 899.00, TRUE, 349)
+ON CONFLICT (id) DO UPDATE SET rental_rate = EXCLUDED.rental_rate;
 
--- C. SUV (Charged per started 24-hr period @ 85.00/day)
+-- C. SUV (Charged per started 24-hr period @ 3500.00/day)
 INSERT INTO vehicles (id, vehicle_type, brand, model, registration_number, rental_rate, is_active, seating_capacity, four_wheel_drive)
-VALUES ('SUV-DEV-301', 'SUV', 'Mahindra', 'Scorpio-N', 'MH-12-DE-3003', 85.00, TRUE, 7, TRUE)
-ON CONFLICT (id) DO NOTHING;
+VALUES ('SUV-DEV-301', 'SUV', 'Mahindra', 'Scorpio-N', 'MH-12-DE-3003', 3500.00, TRUE, 7, TRUE)
+ON CONFLICT (id) DO UPDATE SET rental_rate = EXCLUDED.rental_rate;
 
--- D. Van (Charged per started 24-hr period @ 110.00/day)
+-- D. Van (Charged per started 24-hr period @ 4500.00/day)
 INSERT INTO vehicles (id, vehicle_type, brand, model, registration_number, rental_rate, is_active, cargo_capacity_kg)
-VALUES ('VAN-DEV-401', 'VAN', 'Force', 'Traveller', 'MH-12-DE-4004', 110.00, TRUE, 1500.00)
-ON CONFLICT (id) DO NOTHING;
+VALUES ('VAN-DEV-401', 'VAN', 'Force', 'Traveller', 'MH-12-DE-4004', 4500.00, TRUE, 1500.00)
+ON CONFLICT (id) DO UPDATE SET rental_rate = EXCLUDED.rental_rate;
 
--- 3. Insert Sample Non-Overlapping Bookings for Testing
-INSERT INTO bookings (id, customer_id, vehicle_id, pickup_date_time, return_date_time, rental_amount, status)
-VALUES
-    ('BKG-DEV-5001', 'CUST-DEV-001', 'CAR-DEV-101',
-     '2026-11-01 10:00:00', '2026-11-03 10:00:00', 110.00, 'CONFIRMED'),
-    ('BKG-DEV-5002', 'CUST-DEV-002', 'BIKE-DEV-201',
-     '2026-11-01 14:00:00', '2026-11-01 17:00:00', 45.00, 'CONFIRMED')
-ON CONFLICT (id) DO NOTHING;
+-- 3. (Sample bookings removed per Task 4: only real user-created reservations appear)
+-- INSERT INTO bookings (id, customer_id, vehicle_id, pickup_date_time, return_date_time, rental_amount, status)...
 
--- 4. Insert Sample Payment Audit Record
-INSERT INTO payments (id, booking_id, amount, payment_date_time, payment_method, status, transaction_reference)
-VALUES
-    ('PAY-DEV-7001', 'BKG-DEV-5001', 110.00, '2026-11-01 09:30:00', 'UPI', 'COMPLETED', 'UPI-REF-20261101-0001')
-ON CONFLICT (id) DO NOTHING;
+-- 4. (Sample payment audit records removed per Task 4)
+-- INSERT INTO payments (id, booking_id, amount, payment_date_time, payment_method, status, transaction_reference)...
 
 -- 5. Insert Sample Maintenance Record
 INSERT INTO maintenance (id, vehicle_id, service_date, description, cost, is_completed)

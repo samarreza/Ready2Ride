@@ -159,6 +159,50 @@ public class BookingService {
     }
 
     /**
+     * Cancels an existing booking after strictly enforcing customer ownership in the backend.
+     *
+     * @param bookingId  booking identifier
+     * @param customerId authenticated customer ID
+     * @return updated booking with CANCELLED status
+     * @throws SecurityException        if the booking belongs to another customer
+     * @throws IllegalStateException    if the booking has already completed
+     * @throws BookingNotFoundException if the booking does not exist
+     */
+    public Booking cancelBookingForCustomer(String bookingId, String customerId) {
+        Objects.requireNonNull(customerId, "Customer ID must not be null");
+        Booking booking = getBookingById(bookingId);
+        if (!customerId.trim().equalsIgnoreCase(booking.getCustomerId())) {
+            throw new SecurityException("Unauthorized: You do not have permission to cancel booking " + bookingId);
+        }
+        if (booking.getStatus() == BookingStatus.CANCELLED) {
+            return booking;
+        }
+        if (booking.getStatus() == BookingStatus.COMPLETED) {
+            throw new IllegalStateException("Completed bookings cannot be cancelled.");
+        }
+        booking.setStatus(BookingStatus.CANCELLED);
+        return bookingRepository.save(booking);
+    }
+
+    /**
+     * Retrieves a booking by its identifier with customer ownership verification.
+     *
+     * @param bookingId  booking identifier
+     * @param customerId authenticated customer ID
+     * @return matching booking
+     * @throws SecurityException        if the booking belongs to another customer
+     * @throws BookingNotFoundException if the booking does not exist
+     */
+    public Booking getBookingForCustomer(String bookingId, String customerId) {
+        Objects.requireNonNull(customerId, "Customer ID must not be null");
+        Booking booking = getBookingById(bookingId);
+        if (!customerId.trim().equalsIgnoreCase(booking.getCustomerId())) {
+            throw new SecurityException("Unauthorized: You do not have permission to access booking " + bookingId);
+        }
+        return booking;
+    }
+
+    /**
      * Retrieves a booking by its identifier.
      *
      * @param bookingId booking identifier

@@ -89,8 +89,22 @@ public class Ready2RideApplication extends Application {
                 stmt.execute("ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('CUSTOMER', 'RENTAL_PROVIDER', 'ADMIN'));");
                 stmt.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS provider_id VARCHAR(50) NULL REFERENCES users(id) ON DELETE SET NULL;");
                 stmt.execute("CREATE INDEX IF NOT EXISTS idx_vehicles_provider ON vehicles(provider_id);");
+
+                // Clean up any integration test artifacts if left over in database
+                stmt.execute("DELETE FROM payments WHERE booking_id IN (SELECT id FROM bookings WHERE vehicle_id LIKE 'IT-%') OR id LIKE 'IT-%';");
+                stmt.execute("DELETE FROM user_favorites WHERE vehicle_id LIKE 'IT-%';");
+                stmt.execute("DELETE FROM vehicle_images WHERE vehicle_id LIKE 'IT-%';");
+                stmt.execute("DELETE FROM maintenance WHERE vehicle_id LIKE 'IT-%' OR id LIKE 'IT-%';");
+                stmt.execute("DELETE FROM bookings WHERE vehicle_id LIKE 'IT-%' OR id LIKE 'IT-%';");
+                stmt.execute("DELETE FROM vehicles WHERE id LIKE 'IT-%';");
+
+                // Normalize legacy development vehicle rates from old dollar amounts to realistic INR rates
+                stmt.execute("UPDATE vehicles SET rental_rate = 2499.00 WHERE id = 'CAR-DEV-101' AND rental_rate < 500;");
+                stmt.execute("UPDATE vehicles SET rental_rate = 899.00 WHERE id = 'BIKE-DEV-201' AND rental_rate < 500;");
+                stmt.execute("UPDATE vehicles SET rental_rate = 3500.00 WHERE id = 'SUV-DEV-301' AND rental_rate < 500;");
+                stmt.execute("UPDATE vehicles SET rental_rate = 4500.00 WHERE id = 'VAN-DEV-401' AND rental_rate < 500;");
             } catch (Exception e) {
-                LOGGER.log(Level.INFO, "Notice during schema verification: " + e.getMessage());
+                LOGGER.log(Level.INFO, "Notice during schema verification / price normalization: " + e.getMessage());
             }
 
             userRepository = RepositoryFactory.createJdbcUserRepository(connectionManager);
@@ -146,7 +160,8 @@ public class Ready2RideApplication extends Application {
                 this::showVehicleCatalogScene,
                 this::showVehicleCatalogScene,
                 this::showLoginScene,
-                this::showRegisterScene
+                this::showRegisterScene,
+                () -> showCustomerDashboardScene(null)
         );
 
         Scene homeScene = new Scene(homeView.getRootNode(), 1380, 880);
@@ -198,7 +213,7 @@ public class Ready2RideApplication extends Application {
                 this::showDashboardScene,
                 this::showHomeScene,
                 this::showRegisterScene,
-                this::showCustomerDashboardScene
+                user -> showHomeScene() // Customer login -> normal Ready2Ride home page
         );
 
         Scene loginScene = new Scene(loginView.getRootNode(), 1380, 880);
@@ -234,7 +249,8 @@ public class Ready2RideApplication extends Application {
                 favoritesService,
                 authService,
                 this::showHomeScene,
-                () -> showVehicleCatalogScene(null)
+                () -> showVehicleCatalogScene(null),
+                this::showLoginScene // Customer Logout -> Login screen
         );
 
         Scene custScene = new Scene(customerDashboard.getRootNode(), 1380, 880);
@@ -257,7 +273,7 @@ public class Ready2RideApplication extends Application {
                 authService,
                 paymentService,
                 maintenanceService,
-                this::showHomeScene
+                this::showLoginScene // Provider Logout -> Login screen
         );
 
         Scene dashboardScene = new Scene(dashboardView.getRootNode(), 1380, 880);
